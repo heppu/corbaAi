@@ -1,0 +1,48 @@
+body {
+	font-family:Arial, Helvetica, sans-serif;
+}
+#container{
+	border: 5px solid grey;
+	width: 700px;
+	margin: 0 auto;
+	padding: 10px;
+}
+#chatLog{
+	padding: 5px;
+	border: 1px solid black;
+	min-height: 300px;
+	max-height: 900px;
+	overflow-y: scroll;
+}
+#chatLog div.data {
+	margin: 0;
+	white-space: pre;
+}
+.row-wrap {
+	margin: 8px 0;
+	padding: 4px;
+	border: 1px solid grey;
+}
+.data-wrapper {
+	margin: 0 0 10px 0;
+	display: flex;
+}
+.info {
+	display: inline-block;
+	width: 180px;
+}
+.data {
+	width: 480px;
+	display: inline-block;
+}
+.event {
+	color:#999;
+}
+.warning{
+	font-weight: bold;
+	color: #CCC;
+}
+h3 {
+	margin: 0 0 4px 0;
+	color: #333;
+}
