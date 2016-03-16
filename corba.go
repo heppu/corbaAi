@@ -105,12 +105,17 @@ func (c *CorbaAi) OnEvents(msg client.EventsMessage) {
 	for _, e := range msg.Events {
 		switch e.Type {
 
-		// This can happen to our or enemy bot so lets use damaged to detect hits on our bots
+		// This can happen to our or enemy bot so lets use damagedto detect hits on our bots
 		case client.EVENT_HIT:
 			log.Printf("[corba][OnEvents][[hit] : Bot %d\n", e.BotId.Int64)
 
 		case client.EVENT_DIE:
 			log.Printf("[corba][OnEvents][die] : Bot %d\n", e.BotId.Int64)
+
+			// Remove bot from actions
+			if _, ok := c.Actions[int(e.BotId.Int64)]; ok {
+				delete(c.Actions, int(e.BotId.Int64))
+			}
 
 		case client.EVENT_RADAR_ECHO:
 			log.Printf("[corba][OnEvents][radarEcho] : Pos %v\n", e.Position)
