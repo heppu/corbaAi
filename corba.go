@@ -111,7 +111,7 @@ func (c *CorbaAi) OnEvents(msg client.EventsMessage) {
 
 		case client.EVENT_MOVE:
 			log.Printf("[corba][OnEvents][move] : Bot %d\n", e.BotId.Int64)
-			c.Map.MoveMyBot(int(e.BotId.BotId))
+			c.Map.MoveMyBot(int(e.BotId.Int64))
 
 		case client.EVENT_NOACTION:
 			log.Printf("[corba][OnEvents][noaction] : Bot %d\n", e.BotId.Int64)
