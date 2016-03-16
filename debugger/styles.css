@@ -11,7 +11,7 @@ body {
 	padding: 5px;
 	border: 1px solid black;
 	min-height: 300px;
-	max-height: 900px;
+	max-height: 300px;
 	overflow-y: scroll;
 }
 #chatLog div.data {

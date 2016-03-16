@@ -1,133 +1,6 @@
 $(document).ready(function() {
-	var socket;
-
-	// Api
-	$('#start').click(function() {
-		$.post('/race/start',
-			function(data) {
-	    		message('<div class="info message">API start: </div><div class="data">', data);
-	    	},
-	    	function(err) {
-	    		message('<div class="info warning">API start: </div><div class="data err">', err);
-	    	}
-    	);
-  	});
-
-	$('#stop').click(function() {
-    	$.post('/race/stop',
-    		function(data) {
-	    		message('<div class="info message">API stop: </div><div class="data">', data);
-	    	},
-	    	function(err) {
-	    		message('<div class="info warning">API stop: </div><div class="data err">', err);
-	    	}
-	    );
-  	});
-
-  	$('#get_race').click(function() {
-    	$.get('/race/'+$('#race_id').val(),
-    		function(data) {
-	    		message('<div class="info message">API race: </div><div class="data">', data);
-	    	},
-	    	function(err) {
-	    		message('<div class="info warning">API race: </div><div class="data err">', err);
-	    	}
-	    );
-  	});
-
-	$('#get_races').click(function() {
-    	$.get('/races',
-    		function(data) {
-	    		message('<div class="info message">API races: </div><div class="data">', data);
-	    	},
-	    	function(err) {
-	    		message('<div class="info warning">API races: </div><div class="data err">', err);
-	    	}
-	    );
-  	});
-
-	$('#get_transponders').click(function() {
-    	$.get('/transponders',
-    		function(data) {
-	    		message('<div class="info message">API transponders: </div><div class="data">', data);
-	    	},
-	    	function(err) {
-	    		message('<div class="info warning">API transponders: </div><div class="data err">', err);
-	    	}
-	    );
-  	});
-
-  	$('#put_transponders').click(function() {
-  		var obj = [{id: 2596996162, car_num: 4}]
-    	$.ajax({
-			url: '/transponders',
-			type: 'PUT',
-			contentType: 'application/json',
-			data: JSON.stringify(obj),
-			success: function(data) {
-	    		message('<div class="info message">API transponders: </div><div class="data">', data);
-	    	},
-	    	error: function(err) {
-	    		message('<div class="info warning">API transponders: </div><div class="data err">', err);
-	    	}
-	    });
-  	});
-
-  	$('#put_drivers').click(function() {
-  		var obj = [{
-  					race_id: parseInt($('#d_race_id').val()),
-  					transponder_id: parseInt($('#d_t_id').val()),
-  					car_num: parseInt($('#d_car_num').val()),
-  					driver_name: $('#d_name').val()
-  				}]
-    	$.ajax({
-			url: '/drivers',
-			type: 'PUT',
-			contentType: 'application/json',
-			data: JSON.stringify(obj),
-			success: function(data) {
-	    		message('<div class="info message">API drivers: </div><div class="data">', data);
-	    	},
-	    	error: function(err) {
-	    		message('<div class="info warning">API drivers: </div><div class="data err">', err);
-	    	}
-	    });
-  	});
-
-  	$('#get_top_all').click(function() {
-    	$.get('/top/all/10',
-    		function(data) {
-	    		message('<div class="info message">API race: </div><div class="data">', data);
-	    	},
-	    	function(err) {
-	    		message('<div class="info warning">API race: </div><div class="data err">', err);
-	    	}
-	    );
-  	});
-
-  	$('#get_top_year').click(function() {
-    	$.get('/top/year/10',
-    		function(data) {
-	    		message('<div class="info message">API race: </div><div class="data">', data);
-	    	},
-	    	function(err) {
-	    		message('<div class="info warning">API race: </div><div class="data err">', err);
-	    	}
-	    );
-  	});
-
-  	$('#get_top_month').click(function() {
-    	$.get('/top/month/10',
-    		function(data) {
-	    		message('<div class="info message">API race: </div><div class="data">', data);
-	    	},
-	    	function(err) {
-	    		message('<div class="info warning">API race: </div><div class="data err">', err);
-	    	}
-	    );
-  	});
-
 	// Websocket
+	var socket;
 	$('#disconnect').click(function(){
 		socket.close();
 	});
@@ -157,4 +30,72 @@ $(document).ready(function() {
 	function message(msg, obj){
 		$('#chatLog').append('<div class="data-wrapper">'+msg+JSON.stringify(JSON.parse(obj), null, 2)+'</div></div>');
 	}
+
+
+	// Hexagon
+	//svg sizes and margins
+	var margin = {
+	    top: 30,
+	    right: 20,
+	    bottom: 20,
+	    left: 50
+	};
+
+	//The next lines should be run, but this seems to go wrong on the first load in bl.ocks.org
+	//var width = $(window).width() - margin.left - margin.right - 40;
+	//var height = $(window).height() - margin.top - margin.bottom - 80;
+	//So I set it fixed to
+	var width = 850;
+	var height = 350;
+
+	//The number of columns and rows of the heatmap
+	var MapColumns = 30,
+		MapRows = 20;
+		
+	//The maximum radius the hexagons can have to still fit the screen
+	var hexRadius = d3.min([width/((MapColumns + 0.5) * Math.sqrt(3)),
+				height/((MapRows + 1/3) * 1.5)]);
+
+	//Set the new height and width of the SVG based on the max possible
+	width = MapColumns*hexRadius*Math.sqrt(3);
+	heigth = MapRows*1.5*hexRadius+0.5*hexRadius;
+
+	//Set the hexagon radius
+	var hexbin = d3.hexbin()
+	    	       .radius(hexRadius);
+
+	//Calculate the center positions of each hexagon	
+	var points = [];
+	for (var i = 0; i < MapRows; i++) {
+	    for (var j = 0; j < MapColumns; j++) {
+	        points.push([hexRadius * j * 1.75, hexRadius * i * 1.5]);
+	    }//for j
+	}//for i
+
+	//Create SVG element
+	var svg = d3.select("#chart").append("svg")
+	    .attr("width", width + margin.left + margin.right)
+	    .attr("height", height + margin.top + margin.bottom)
+	    .append("g")
+	    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+	//Start drawing the hexagons
+	svg.append("g")
+	    .selectAll(".hexagon")
+	    .data(hexbin(points))
+	    .enter().append("path")
+	    .attr("class", "hexagon")
+	    .attr("d", function (d) {
+			return "M" + d.x + "," + d.y + hexbin.hexagon();
+		})
+	    .attr("stroke", function (d,i) {
+			return "#fff";
+		})
+	    .attr("stroke-width", "1px")
+	    .style("fill", function (d,i) {
+			return color[i];
+		})
+		.on("mouseover", mover)
+		.on("mouseout", mout)
+		;
 });
