@@ -1,17 +1,15 @@
 $(document).ready(function() {
-	// Websocket
 	var socket;
-	$('#disconnect').click(function(){
-		socket.close();
-	});
+	var grid = {};
+	
+	connect();
 
-	$('#connect').click(function(){
+	function connect() {
 		try{
 			socket = new WebSocket("ws://127.0.0.1:8888/socket");
-			message('<div class="info event">Socket Status: </div><div class="data">', socket.readyState);
 
 			socket.onopen = function(){
-				message('<div class="info event">Socket Status (open): </div><div class="data">', socket.readyState);
+				console.log("Socket opened");
 			}
 
 			socket.onmessage = function(msg){
@@ -19,30 +17,31 @@ $(document).ready(function() {
 				if ('map' in res) {
 					parseResponse(res.map);
 				}
-				message('<div class="info ws-message">Received: </div><div class="data">', msg.data);
 			}
 
-			socket.onclose = function(){
-				message('<div class="info event">Socket Status (closed): </div><div class="data">', socket.readyState);
+			socket.onclose = function() {
+				console.log("Socket closed");
 			}
 
-		} catch(exception){
-			message('<p>Error', exception);
+		} catch(exception) {
+			console.log("Fug", exception);
 		}
-    });
+	}
 
-	function message(msg, obj){
-		$('#chatLog').append('<div class="data-wrapper">'+msg+JSON.stringify(JSON.parse(obj), null, 2)+'</div></div>');
+	function disconnect() {
+		socket.close();
 	}
 
 	function parseResponse(res) {
 		for (var i=0; i<res.length; i++) {
-			console.log(res[i]);
-			if (!res[i].empty) {
-				$("#" + res[i].x + "_" + res[i].y).css("fill", "#002672");
-			} else {
-				$("#" + res[i].x + "_" + res[i].y).css("fill", "#95B2D2");
+			if (grid[res[i].x + "_" + res[i].y] || grid[res[i].x + "_" + res[i].y] !== res[i].empty) {
+				if (!res[i].empty) {
+					$("#" + res[i].x + "_" + res[i].y).css("fill", "#002672");
+				} else {
+					$("#" + res[i].x + "_" + res[i].y).css("fill", "#95B2D2");
+				}
 			}
+			grid[res[i].x + "_" + res[i].y] = res[i].empty;
 		}
 	}
 
