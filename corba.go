@@ -111,8 +111,7 @@ func (c *CorbaAi) OnEvents(msg client.EventsMessage) {
 
 		case client.EVENT_DIE:
 			log.Printf("[corba][OnEvents][die] : Bot %d\n", e.BotId.Int64)
-
-			// Remove bot from actions
+			// Remove bot from actions if it was ours
 			if _, ok := c.Actions[int(e.BotId.Int64)]; ok {
 				delete(c.Actions, int(e.BotId.Int64))
 			}
@@ -120,8 +119,10 @@ func (c *CorbaAi) OnEvents(msg client.EventsMessage) {
 		case client.EVENT_RADAR_ECHO:
 			log.Printf("[corba][OnEvents][radarEcho] : Pos %v\n", e.Position)
 
+		// This will happen when wee see enemy bot
 		case client.EVENT_SEE:
 			log.Printf("[corba][OnEvents][see] : Bot %d\n", e.BotId.Int64)
+			c.Map.DetectEnemyBot(int(e.BotId.Int64))
 
 		case client.EVENT_DETECTED:
 			log.Printf("[corba][OnEvents][detected] : Bot %d\n", e.BotId.Int64)
@@ -134,7 +135,7 @@ func (c *CorbaAi) OnEvents(msg client.EventsMessage) {
 
 		case client.EVENT_MOVE:
 			log.Printf("[corba][OnEvents][move] : Bot %d\n", e.BotId.Int64)
-			c.Map.MoveMyBot(int(e.BotId.Int64))
+			c.Map.MoveMyBot(int(e.BotId.Int64), e.Position)
 
 		case client.EVENT_NOACTION:
 			log.Printf("[corba][OnEvents][noaction] : Bot %d\n", e.BotId.Int64)

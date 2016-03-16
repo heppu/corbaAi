@@ -185,9 +185,11 @@ func (h *HexMap) SetMyBot(bot *client.Bot) {
 	h.markEmpty(bot.Position.X, bot.Position.Y, h.config.See)
 }
 
-func (h *HexMap) MoveMyBot(botId int) {
-	if _, ok := h.myBots[botId]; ok {
-		h.markEmpty(h.myBots[botId].Position.X, h.myBots[botId].Position.Y, h.config.See)
+func (h *HexMap) MoveMyBot(botId int, pos client.Position) {
+	if bot, ok := h.myBots[botId]; ok {
+		h.markEmpty(pos.X, pos.Y, h.config.See)
+		bot.Position = pos
+		h.myBots[botId] = bot
 	}
 }
 
@@ -198,6 +200,7 @@ func (h *HexMap) HitBot(botId, damage int) {
 }
 
 func (h *HexMap) markEmpty(x, y, r int) {
+	r = r - 1
 	for dx := -r; dx < r+1; dx++ {
 		for dy := max(-r, -dx-r); dy < min(r, -dx+r)+1; dy++ {
 			p := h.points[dx+x][dy+y]
@@ -205,6 +208,7 @@ func (h *HexMap) markEmpty(x, y, r int) {
 			for i := 0; i < len(p.PossibleBots); i++ {
 				p.PossibleBots[i] = false
 			}
+			h.points[dx+x][dy+y] = p
 		}
 	}
 }
