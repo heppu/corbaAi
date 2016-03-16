@@ -17,9 +17,10 @@ type WebsocketHandler struct {
 }
 
 type HexMap struct {
-	points map[int]map[int]Point
-	myBots map[int]*client.Bot
-	config client.GameConfig
+	points          map[int]map[int]Point
+	myBots          map[int]*client.Bot
+	config          client.GameConfig
+	positionHistory map[int][2]client.Position
 }
 
 type Point struct {
@@ -44,8 +45,9 @@ func NewHexMap(c client.GameConfig, visualize bool) *HexMap {
 
 	hm.points = make(map[int]map[int]Point)
 	hm.myBots = make(map[int]*client.Bot)
+	hm.positionHistory = make(map[int][2]client.Position)
 
-	// Initilaze map with points
+	// Initialize map with points
 	var x = 0
 	var y = 0
 	var z = 0
@@ -183,6 +185,9 @@ func (h *HexMap) DetectEnemyBot(botId int) {
 func (h *HexMap) SetMyBot(bot *client.Bot) {
 	h.myBots[bot.BotId] = bot
 	h.markEmpty(bot.Position.X, bot.Position.Y, h.config.See)
+
+	// Initialize position history
+	h.positionHistory[bot.BotId] = [2]client.Position{bot.Position, bot.Position}
 }
 
 func (h *HexMap) MoveMyBot(botId int, pos client.Position) {
