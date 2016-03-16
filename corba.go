@@ -55,7 +55,7 @@ func (c *CorbaAi) Move() (actions []client.Action) {
 }
 
 // OnConnected function will be called when websocket connection is established
-// and server has send connected message.
+// and server has sent connected message.
 func (c *CorbaAi) OnConnected(msg client.ConnectedMessage) {
 	log.Println("[corba][OnConnected]")
 	//spew.Dump(msg)
@@ -131,7 +131,7 @@ func (c *CorbaAi) OnEnd(msg client.EndMessage) {
 	spew.Dump(msg)
 }
 
-// OnError will be called when server sends message that has unknow message type.
+// OnError will be called when server sends message that has unknown message type.
 func (c *CorbaAi) OnError(msg string) {
 	log.Println("[corba][OnError]")
 	log.Println(msg)
