@@ -17,7 +17,7 @@ type CorbaAi struct {
 	Config     client.GameConfig
 	Map        *hexMap.HexMap
 	Actions    map[int]client.Action
-	WasHit     map[int]bool
+	WasLocated map[int]bool
 }
 
 // Name for Our Ai
@@ -39,13 +39,13 @@ func (c *CorbaAi) Move() (actions []client.Action) {
 	log.Println("[corba][move]")
 
 	//
-	for botId, wasHit := range c.WasHit {
+	for botId, wasHit := range c.WasLocated {
 		if wasHit {
 			// Activate run tactic here
 			log.Printf("Bot %d was hit run!")
 
 			// Reset hit here
-			c.WasHit[botId] = false
+			c.WasLocated[botId] = false
 		}
 	}
 
@@ -88,7 +88,7 @@ func (c *CorbaAi) OnStart(msg client.StartMessage) {
 	c.MyTeam = msg.You
 	c.OtherTeams = msg.OtherTeams
 	c.Actions = make(map[int]client.Action)
-	c.WasHit = make(map[int]bool)
+	c.WasLocated = make(map[int]bool)
 
 	for i := 0; i < len(msg.You.Bots); i++ {
 		c.Map.SetMyBot(&msg.You.Bots[i])
@@ -125,11 +125,10 @@ func (c *CorbaAi) OnEvents(msg client.EventsMessage) {
 
 		case client.EVENT_DETECTED:
 			log.Printf("[corba][OnEvents][detected] : Bot %d\n", e.BotId.Int64)
-			spew.Dump(e)
 
 		case client.EVENT_DAMAGED:
 			log.Printf("[corba][OnEvents][damaged] : Bot %d\n", e.BotId.Int64)
-			c.WasHit[int(e.BotId.Int64)] = true
+			c.WasLocated[int(e.BotId.Int64)] = true
 			c.Map.HitBot(int(e.BotId.Int64), int(e.Damage.Int64))
 
 		case client.EVENT_MOVE:
