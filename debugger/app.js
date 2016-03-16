@@ -15,6 +15,10 @@ $(document).ready(function() {
 			}
 
 			socket.onmessage = function(msg){
+				var res = JSON.parse(msg.data);
+				if ('map' in res) {
+					parseResponse(res.map);
+				}
 				message('<div class="info ws-message">Received: </div><div class="data">', msg.data);
 			}
 
@@ -29,6 +33,17 @@ $(document).ready(function() {
 
 	function message(msg, obj){
 		$('#chatLog').append('<div class="data-wrapper">'+msg+JSON.stringify(JSON.parse(obj), null, 2)+'</div></div>');
+	}
+
+	function parseResponse(res) {
+		for (var i=0; i<res.length; i++) {
+			console.log(res[i]);
+			if (!res[i].empty) {
+				$("#" + res[i].x + "_" + res[i].y).css("fill", "#002672");
+			} else {
+				$("#" + res[i].x + "_" + res[i].y).css("fill", "#95B2D2");
+			}
+		}
 	}
 
 
@@ -46,15 +61,17 @@ $(document).ready(function() {
 	//var height = $(window).height() - margin.top - margin.bottom - 80;
 	//So I set it fixed to
 	var width = 850;
-	var height = 350;
+	var height = 850;
 
 	//The number of columns and rows of the heatmap
-	var MapColumns = 30,
-		MapRows = 20;
-		
+	var MapColumns = 2*14+1,
+		MapRows = 2*14+1;
+	
+	// Size of hexagon
 	//The maximum radius the hexagons can have to still fit the screen
-	var hexRadius = d3.min([width/((MapColumns + 0.5) * Math.sqrt(3)),
-				height/((MapRows + 1/3) * 1.5)]);
+	//var hexRadius = d3.min([width/((MapColumns + 0.5) * Math.sqrt(3)),
+	//			height/((MapRows + 1/3) * 1.5)]);
+	var hexRadius = 20;
 
 	//Set the new height and width of the SVG based on the max possible
 	width = MapColumns*hexRadius*Math.sqrt(3);
@@ -84,18 +101,15 @@ $(document).ready(function() {
 	    .selectAll(".hexagon")
 	    .data(hexbin(points))
 	    .enter().append("path")
+	    .attr("id", function(d) { return (Math.ceil(-14/2-(d.j/2))+d.i) + "_" + (-14+d.j); })
+	    .attr("alt", function(d) { return (Math.ceil(-14/2-(d.j/2))+d.i) + "_" + (-14+d.j); })
 	    .attr("class", "hexagon")
 	    .attr("d", function (d) {
 			return "M" + d.x + "," + d.y + hexbin.hexagon();
 		})
 	    .attr("stroke", function (d,i) {
-			return "#fff";
+			return "#000";
 		})
 	    .attr("stroke-width", "1px")
-	    .style("fill", function (d,i) {
-			return color[i];
-		})
-		.on("mouseover", mover)
-		.on("mouseout", mout)
-		;
+	    .style("fill", "F6F8FB");
 });
