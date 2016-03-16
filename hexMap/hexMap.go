@@ -27,11 +27,16 @@ type Point struct {
 	Empty        bool
 }
 
+type Info struct {
+	Map  []InfoPoint  `json:"map"`
+	Bots []client.Bot `json:"bots"`
+}
+
 type InfoPoint struct {
-	X     int
-	Y     int
-	Empty bool
-	Bots  []int
+	X     int   `json:"x"`
+	Y     int   `json:"y"`
+	Empty bool  `json:"empty"`
+	Bots  []int `json:"bots"`
 }
 
 func NewHexMap(c client.GameConfig, visualize bool) *HexMap {
@@ -85,20 +90,27 @@ func (ws *WebsocketHandler) sender() {
 			select {
 			case <-ticker.C:
 				// Create Json data
-				r := make([]InfoPoint, 0)
+				r := Info{}
+				// Create map points
+				r.Map = make([]InfoPoint, 0)
 				for i, _ := range ws.hm.points {
 					for j, _ := range ws.hm.points[i] {
 						bots := make([]int, 0)
 						for k, _ := range ws.hm.points[i][j].PossibleBots {
 							bots = append(bots, k)
 						}
-						r = append(r, InfoPoint{
+						r.Map = append(r.Map, InfoPoint{
 							X:     i,
 							Y:     j,
 							Empty: ws.hm.points[i][j].Empty,
 							Bots:  bots,
 						})
 					}
+				}
+				// Add bots
+				r.Bots = make([]client.Bot, 0)
+				for _, v := range ws.hm.myBots {
+					r.Bots = append(r.Bots, *v)
 				}
 
 				// Send data to all open connections
