@@ -208,12 +208,13 @@ func (h *HexMap) markEmpty(x, y, r int) {
 	r = r - 1
 	for dx := -r; dx < r+1; dx++ {
 		for dy := max(-r, -dx-r); dy < min(r, -dx+r)+1; dy++ {
-			p := h.points[dx+x][dy+y]
-			p.Empty = true
-			for i := 0; i < len(p.PossibleBots); i++ {
-				p.PossibleBots[i] = false
+			if p, ok := h.points[dx+x][dy+y]; ok {
+				p.Empty = true
+				for i := 0; i < len(p.PossibleBots); i++ {
+					p.PossibleBots[i] = false
+				}
+				h.points[dx+x][dy+y] = p
 			}
-			h.points[dx+x][dy+y] = p
 		}
 	}
 }
