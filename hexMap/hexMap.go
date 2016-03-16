@@ -149,6 +149,12 @@ func (ws *WebsocketHandler) listen(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// This will be called first thing on each round
+// We should use flood fill, etc. to keep map up to date
+func (h *HexMap) Reduce() {
+
+}
+
 func (h *HexMap) InitEnemies(teams []client.Team) {
 	var x = 0
 	var y = 0
@@ -170,7 +176,7 @@ func (h *HexMap) InitEnemies(teams []client.Team) {
 	}
 }
 
-func (h *HexMap) DetectEnemyBot(bot *client.Bot) {
+func (h *HexMap) DetectEnemyBot(botId int) {
 
 }
 
@@ -179,8 +185,10 @@ func (h *HexMap) SetMyBot(bot *client.Bot) {
 	h.markEmpty(bot.Position.X, bot.Position.Y, h.config.See)
 }
 
-func (h *HexMap) MoveMyBot(bot *client.Bot) {
-	h.markEmpty(bot.Position.X, bot.Position.Y, h.config.See)
+func (h *HexMap) MoveMyBot(botId int) {
+	if _, ok := h.myBots[botId]; ok {
+		h.markEmpty(h.myBots[botId].Position.X, h.myBots[botId].Position.Y, h.config.See)
+	}
 }
 
 func (h *HexMap) markEmpty(x, y, r int) {
