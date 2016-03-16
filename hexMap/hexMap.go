@@ -119,13 +119,15 @@ func (ws *WebsocketHandler) listen(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	fmt.Println("[websocket][verbose] : New socket opened.")
 	ws.connections[conn] = nil
 	defer func() {
 		conn.Close()
 		delete(ws.connections, conn)
 	}()
 
-	fmt.Println("[websocket][verbose] : New socket opened.")
+	// Send game configurations
+	conn.WriteJSON(ws.hm.config)
 
 	for {
 		if _, _, err = conn.ReadMessage(); err != nil {
@@ -146,8 +148,8 @@ func (h *HexMap) InitEnemies(teams []client.Team) {
 					h.points[i][j].PossibleBots[b.BotId] = true
 				}
 			}
-
 		}
+
 		if x < h.config.FieldRadius {
 			x++
 		} else {
