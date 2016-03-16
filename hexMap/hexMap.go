@@ -191,6 +191,12 @@ func (h *HexMap) MoveMyBot(botId int) {
 	}
 }
 
+func (h *HexMap) HitBot(botId, damage int) {
+	if _, ok := h.myBots[botId]; ok {
+		h.myBots[botId].Hp -= damage
+	}
+}
+
 func (h *HexMap) markEmpty(x, y, r int) {
 	for dx := -r; dx < r+1; dx++ {
 		for dy := max(-r, -dx-r); dy < min(r, -dx+r)+1; dy++ {

@@ -17,6 +17,7 @@ type CorbaAi struct {
 	Config     client.GameConfig
 	Map        *hexMap.HexMap
 	Actions    map[int]client.Action
+	WasHit     map[int]bool
 }
 
 // Name for Our Ai
@@ -37,6 +38,17 @@ func main() {
 func (c *CorbaAi) Move() (actions []client.Action) {
 	log.Println("[corba][move]")
 
+	//
+	for botId, wasHit := range c.WasHit {
+		if wasHit {
+			// Activate run tactic here
+			log.Printf("Bot %d was hit run!")
+
+			// Reset hit here
+			c.WasHit[botId] = false
+		}
+	}
+
 	// Move all bots randomly around the area
 	for botId, a := range c.Actions {
 		// Get valid move points
@@ -50,6 +62,8 @@ func (c *CorbaAi) Move() (actions []client.Action) {
 		// Add action to list
 		actions = append(actions, a)
 	}
+
+	// Run after each round
 	c.Map.Reduce()
 	return
 }
@@ -74,6 +88,7 @@ func (c *CorbaAi) OnStart(msg client.StartMessage) {
 	c.MyTeam = msg.You
 	c.OtherTeams = msg.OtherTeams
 	c.Actions = make(map[int]client.Action)
+	c.WasHit = make(map[int]bool)
 
 	for i := 0; i < len(msg.You.Bots); i++ {
 		c.Map.SetMyBot(&msg.You.Bots[i])
@@ -90,6 +105,7 @@ func (c *CorbaAi) OnEvents(msg client.EventsMessage) {
 	for _, e := range msg.Events {
 		switch e.Type {
 
+		// This can happen to our or enemy bot so lets use damaged to detect hits on our bots
 		case client.EVENT_HIT:
 			log.Printf("[corba][OnEvents][[hit] : Bot %d\n", e.BotId.Int64)
 
@@ -108,6 +124,8 @@ func (c *CorbaAi) OnEvents(msg client.EventsMessage) {
 
 		case client.EVENT_DAMAGED:
 			log.Printf("[corba][OnEvents][damaged] : Bot %d\n", e.BotId.Int64)
+			c.WasHit[int(e.BotId.Int64)] = true
+			c.Map.HitBot(int(e.BotId.Int64), int(e.Damage.Int64))
 
 		case client.EVENT_MOVE:
 			log.Printf("[corba][OnEvents][move] : Bot %d\n", e.BotId.Int64)
