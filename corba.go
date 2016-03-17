@@ -38,31 +38,38 @@ func main() {
 func (c *CorbaAi) Move() (actions []client.Action) {
 	log.Println("[corba][move]")
 
-	//
-	for botId, wasHit := range c.WasLocated {
-		if wasHit {
-			// Activate run tactic here
-			log.Printf("Bot %d was hit run!")
+	// Choose tactic base on how many bots we have
+	switch len(c.Actions) {
+	case 1:
+		log.Println("Do something")
+	case 2:
+		log.Println("Do something")
+	default:
+		for botId, a := range c.Actions {
+			if c.WasLocated[botId] {
+				// Activate run tactic here
+				log.Printf("Bot %d was located run!")
 
-			// Reset hit here
-			c.WasLocated[botId] = false
+				// Get optimal new position from map
+				a.Position = c.Map.Run(botId)
+				a.Type = client.BOT_MOVE
+
+				// Reset hit here
+				c.WasLocated[botId] = false
+				continue
+			} else {
+				// Move randomly
+				validMoves := c.Map.GetValidMoves(botId)
+				a.Position = validMoves[rand.Intn(len(validMoves))]
+				a.Type = client.BOT_MOVE
+			}
+
+			// Add action to list
+			actions = append(actions, *a)
 		}
 	}
 
-	// Move all bots randomly around the area
-	for botId, a := range c.Actions {
-		// Get valid move points
-		validMoves := c.Map.GetValidMoves(botId)
-
-		// Set Action
-		a.Position = validMoves[rand.Intn(len(validMoves))]
-		a.Type = client.BOT_MOVE
-
-		// Add action to list
-		actions = append(actions, *a)
-	}
 	c.Map.Send()
-
 	return
 }
 
@@ -92,6 +99,7 @@ func (c *CorbaAi) OnStart(msg client.StartMessage) {
 	for i := 0; i < len(msg.You.Bots); i++ {
 		c.Map.SetMyBot(&msg.You.Bots[i])
 		c.Actions[msg.You.Bots[i].BotId] = &client.Action{BotId: msg.You.Bots[i].BotId}
+		c.WasLocated[msg.You.Bots[i].BotId] = false
 	}
 
 	c.Map.InitEnemies(msg.OtherTeams)
@@ -123,6 +131,7 @@ func (c *CorbaAi) OnEvents(msg client.EventsMessage) {
 			// Remove bot from actions if it was ours
 			if _, ok := c.Actions[int(e.BotId.Int64)]; ok {
 				delete(c.Actions, int(e.BotId.Int64))
+				delete(c.WasLocated, int(e.BotId.Int64))
 			}
 
 		case client.EVENT_RADAR_ECHO:
@@ -135,6 +144,7 @@ func (c *CorbaAi) OnEvents(msg client.EventsMessage) {
 
 		case client.EVENT_DETECTED:
 			log.Printf("[corba][OnEvents][detected] : Bot %d\n", e.BotId.Int64)
+			c.WasLocated[int(e.BotId.Int64)] = true
 
 		case client.EVENT_DAMAGED:
 			log.Printf("[corba][OnEvents][damaged] : Bot %d\n", e.BotId.Int64)

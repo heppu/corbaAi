@@ -2,6 +2,7 @@ package hexMap
 
 import (
 	"fmt"
+	"math/rand"
 	"net/http"
 
 	"github.com/gorilla/websocket"
@@ -259,6 +260,21 @@ func (h *HexMap) markEmpty(x, y, r int) {
 			}
 		}
 	}
+}
+
+// Get run away move
+// 1. Gte all valid moves for bot
+// 2. Filter bad moves out
+// 3. Get random move from best moves
+// 4. If no best moves get one from valids
+func (h *HexMap) Run(botId int) client.Position {
+	validMoves := h.GetValidMoves(botId)
+	// Use these to detect our movign direction
+
+	//currentPosition := h.positionHistory[botId][0]
+	//lastPosition := h.positionHistory[botId][1]
+
+	return validMoves[rand.Intn(len(validMoves))]
 }
 
 // Get valid positios where bot can move
