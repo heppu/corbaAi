@@ -68,8 +68,8 @@ func (c *CorbaAi) Move() (actions []client.Action) {
 
 			// Add action to list
 			actions = append(actions, *a)
-			break
 		}
+		break
 	}
 
 	c.Map.Send()
