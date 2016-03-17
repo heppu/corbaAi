@@ -18,6 +18,7 @@ type CorbaAi struct {
 	Map        *hexMap.HexMap
 	Actions    map[int]*client.Action
 	WasLocated map[int]bool
+	Radared    map[int]*client.Position
 }
 
 // Name for Our Ai
@@ -48,6 +49,9 @@ func (c *CorbaAi) Move() (actions []client.Action) {
 		break
 	default:
 		for botId, a := range c.Actions {
+			// Set previous radared to nil
+			c.Radared[botId] = nil
+
 			if c.WasLocated[botId] {
 				// Activate run tactic here
 				log.Printf("Bot %d was located run!")
@@ -61,9 +65,11 @@ func (c *CorbaAi) Move() (actions []client.Action) {
 				continue
 			} else {
 				// Move randomly
-				validMoves := c.Map.GetValidMoves(botId)
+				validMoves := c.Map.GetValidRadars(botId)
 				a.Position = validMoves[rand.Intn(len(validMoves))]
-				a.Type = client.BOT_MOVE
+				a.Type = client.BOT_RADAR
+
+				c.Radared[botId] = &a.Position
 			}
 
 			// Add action to list
@@ -71,7 +77,7 @@ func (c *CorbaAi) Move() (actions []client.Action) {
 		}
 		break
 	}
-
+	//spew.Dump(actions)
 	c.Map.Send()
 	return
 }
@@ -97,6 +103,7 @@ func (c *CorbaAi) OnStart(msg client.StartMessage) {
 	c.MyTeam = msg.You
 	c.OtherTeams = msg.OtherTeams
 	c.Actions = make(map[int]*client.Action)
+	c.Radared = make(map[int]*client.Position)
 	c.WasLocated = make(map[int]bool)
 
 	for i := 0; i < len(msg.You.Bots); i++ {
@@ -122,16 +129,23 @@ func (c *CorbaAi) OnEvents(msg client.EventsMessage) {
 		stay[botId] = nil
 	}
 
+	// Open points that where radared on last round
+	for _, pos := range c.Radared {
+		if pos != nil {
+			c.Map.Radar(pos)
+		}
+	}
+
 	for _, e := range msg.Events {
 		switch e.Type {
 
-		// This can happen to our or enemy bot so lets use damagedto detect hits on our bots
+		// This can happen to our or enemy bot so lets use damaged to detect hits on our bots
 		case client.EVENT_HIT:
 			log.Printf("[corba][OnEvents][[hit] : Bot %d\n", e.BotId.Int64)
 
 		case client.EVENT_DIE:
 			log.Printf("[corba][OnEvents][die] : Bot %d\n", e.BotId.Int64)
-			// Remove bot from actions if it was ours
+			// Remove bot from data structures
 			if _, ok := c.Actions[int(e.BotId.Int64)]; ok {
 				delete(c.Actions, int(e.BotId.Int64))
 				delete(c.WasLocated, int(e.BotId.Int64))
@@ -140,9 +154,9 @@ func (c *CorbaAi) OnEvents(msg client.EventsMessage) {
 		case client.EVENT_RADAR_ECHO:
 			log.Printf("[corba][OnEvents][radarEcho] : Pos %v\n", e.Position)
 
-		// This will happen when wee see enemy bot
+		// This will happen when too bots see each other
 		case client.EVENT_SEE:
-			log.Printf("[corba][OnEvents][see] : Bot %d\n", e.BotId.Int64)
+			log.Printf("[corba][OnEvents][see] : Bot %d Source %d\n", e.BotId.Int64, e.Source.Int64)
 			c.Map.DetectEnemyBot(int(e.BotId.Int64))
 
 		case client.EVENT_DETECTED:
@@ -171,6 +185,7 @@ func (c *CorbaAi) OnEvents(msg client.EventsMessage) {
 		}
 	}
 
+	// Tell map that these bot's didn't move
 	for botId, _ := range stay {
 		c.Map.Stay(int(botId))
 	}

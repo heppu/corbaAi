@@ -141,6 +141,7 @@ func (h *HexMap) listen(w http.ResponseWriter, r *http.Request) {
 func (h *HexMap) Reduce() {
 	for m := 0; m < h.config.Move; m++ {
 		markUnOpened := make([]*Point, 0)
+
 		// Loop through all points
 		for i, _ := range h.points {
 			for j, p := range h.points[i] {
@@ -150,7 +151,6 @@ func (h *HexMap) Reduce() {
 					if h.checkIfBorderPoint(i, j) {
 						markUnOpened = append(markUnOpened, p)
 					}
-
 				}
 			}
 		}
@@ -159,8 +159,7 @@ func (h *HexMap) Reduce() {
 		for _, p := range markUnOpened {
 			p.Empty = false
 		}
-
-		// Exapand possible bot positions
+		// TODO: Exapand possible bot positions
 	}
 }
 
@@ -168,8 +167,9 @@ func (h *HexMap) checkIfBorderPoint(x, y int) bool {
 	r := 1
 	for dx := -r; dx < r+1; dx++ {
 		for dy := max(-r, -dx-r); dy < min(r, -dx+r)+1; dy++ {
+			l++
 			if p, ok := h.points[dx+x][dy+y]; ok {
-				if p.Empty {
+				if !p.Empty {
 					return true
 				}
 			}
@@ -179,24 +179,26 @@ func (h *HexMap) checkIfBorderPoint(x, y int) bool {
 }
 
 func (h *HexMap) InitEnemies(teams []client.Team) {
-	var x = 0
-	var y = 0
+	/*
+		var x = 0
+		var y = 0
 
-	for i := -h.config.FieldRadius; i < h.config.FieldRadius+1; i++ {
-		for j := -x; j < h.config.FieldRadius+1-y; j++ {
-			for _, t := range teams {
-				for _, b := range t.Bots {
-					h.points[i][j].PossibleBots[b.BotId] = true
+		for i := -h.config.FieldRadius; i < h.config.FieldRadius+1; i++ {
+			for j := -x; j < h.config.FieldRadius+1-y; j++ {
+				for _, t := range teams {
+					for _, b := range t.Bots {
+						h.points[i][j].PossibleBots[b.BotId] = true
+					}
 				}
 			}
-		}
 
-		if x < h.config.FieldRadius {
-			x++
-		} else {
-			y++
+			if x < h.config.FieldRadius {
+				x++
+			} else {
+				y++
+			}
 		}
-	}
+	*/
 }
 
 func (h *HexMap) DetectEnemyBot(botId int) {
@@ -237,7 +239,6 @@ func (h *HexMap) HitBot(botId, damage int) {
 }
 
 func (h *HexMap) markEmpty(x, y, r int) {
-	r = r - 1
 	// Single point case
 	if r == 0 {
 		if p, ok := h.points[x][y]; ok {
@@ -245,7 +246,6 @@ func (h *HexMap) markEmpty(x, y, r int) {
 			for i := 0; i < len(p.PossibleBots); i++ {
 				p.PossibleBots[i] = false
 			}
-			h.points[x][y] = p
 		}
 		return
 	}
@@ -260,6 +260,10 @@ func (h *HexMap) markEmpty(x, y, r int) {
 			}
 		}
 	}
+}
+
+func (h *HexMap) Radar(pos *client.Position) {
+	h.markEmpty(pos.X, pos.Y, h.config.Radar)
 }
 
 // Get run away move
@@ -284,12 +288,12 @@ func (h *HexMap) GetValidMoves(botId int) []client.Position {
 
 // Get valid positios where bot can use cannon
 func (h *HexMap) GetValidCannons(botId int) []client.Position {
-	return getPositionsInRange(0, 0, h.config.Cannon)
+	return getPositionsInRange(0, 0, h.config.FieldRadius)
 }
 
 // Get valid positios where bot can use rader
 func (h *HexMap) GetValidRadars(botId int) []client.Position {
-	return getPositionsInRange(0, 0, h.config.Cannon)
+	return getPositionsInRange(0, 0, h.config.FieldRadius)
 }
 
 // Get valid positions in hexagon for given radius
