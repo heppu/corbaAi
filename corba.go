@@ -105,6 +105,12 @@ func (c *CorbaAi) OnEvents(msg client.EventsMessage) {
 	// Run before each round
 	c.Map.Reduce()
 
+	// Bots that didn't move
+	stay := make(map[int]interface{})
+	for botId, _ := range c.Actions {
+		stay[botId] = nil
+	}
+
 	for _, e := range msg.Events {
 		switch e.Type {
 
@@ -138,9 +144,11 @@ func (c *CorbaAi) OnEvents(msg client.EventsMessage) {
 		case client.EVENT_MOVE:
 			log.Printf("[corba][OnEvents][move] : Bot %d\n", e.BotId.Int64)
 			c.Map.MoveMyBot(int(e.BotId.Int64), e.Position)
+			delete(stay, int(e.BotId.Int64))
 
 		case client.EVENT_NOACTION:
 			log.Printf("[corba][OnEvents][noaction] : Bot %d\n", e.BotId.Int64)
+			c.Map.Stay(int(e.BotId.Int64))
 
 		case client.EVENT_END:
 			log.Printf("[corba][OnEvents][end]\n")
@@ -148,6 +156,10 @@ func (c *CorbaAi) OnEvents(msg client.EventsMessage) {
 		default:
 			log.Printf("[corba][OnEvents][wut] : This shouldn't happen...\n")
 		}
+	}
+
+	for botId, _ := range stay {
+		c.Map.Stay(int(botId))
 	}
 }
 

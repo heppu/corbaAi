@@ -223,6 +223,12 @@ func (h *HexMap) MoveMyBot(botId int, pos client.Position) {
 	}
 }
 
+func (h *HexMap) Stay(botId int) {
+	if positions, ok := h.positionHistory[botId]; ok {
+		h.markEmpty(positions[0].X, positions[0].Y, h.config.See)
+	}
+}
+
 func (h *HexMap) HitBot(botId, damage int) {
 	if bot, ok := h.myBots[botId]; ok {
 		bot.Hp -= damage
