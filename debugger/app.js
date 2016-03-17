@@ -6,7 +6,7 @@ $(document).ready(function() {
 
 	function connect() {
 		try{
-			socket = new WebSocket("ws://localhost:9999/socket");
+			socket = new WebSocket("ws://localhost:8888/socket");
 
 			socket.onopen = function(){
 				console.log("Socket opened");
