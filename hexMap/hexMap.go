@@ -17,10 +17,10 @@ type WebsocketHandler struct {
 }
 
 type HexMap struct {
-	points          map[int]map[int]Point
+	points          map[int]map[int]*Point
 	myBots          map[int]*client.Bot
 	config          client.GameConfig
-	positionHistory map[int][2]client.Position
+	positionHistory map[int]*[2]client.Position
 }
 
 type Point struct {
@@ -43,20 +43,20 @@ type InfoPoint struct {
 func NewHexMap(c client.GameConfig, visualize bool) *HexMap {
 	hm := &HexMap{config: c}
 
-	hm.points = make(map[int]map[int]Point)
+	hm.points = make(map[int]map[int]*Point)
 	hm.myBots = make(map[int]*client.Bot)
-	hm.positionHistory = make(map[int][2]client.Position)
+	hm.positionHistory = make(map[int]*[2]client.Position)
 
 	// Initialize map with points
 	var x = 0
 	var y = 0
 	var z = 0
 	for i := -c.FieldRadius; i < c.FieldRadius+1; i++ {
-		hm.points[i] = make(map[int]Point)
+		hm.points[i] = make(map[int]*Point)
 
 		for j := -x; j < c.FieldRadius+1-y; j++ {
 			pb := make(map[int]bool)
-			hm.points[i][j] = Point{
+			hm.points[i][j] = &Point{
 				PossibleBots: pb,
 				Empty:        false,
 			}
@@ -76,8 +76,8 @@ func NewHexMap(c client.GameConfig, visualize bool) *HexMap {
 
 		http.HandleFunc("/socket", ws.listen)
 		http.Handle("/", http.FileServer(http.Dir("debugger")))
-
-		go http.ListenAndServe("localhost:8888", nil)
+		fmt.Println("listen and server")
+		go http.ListenAndServe("localhost:9999", nil)
 		go ws.sender()
 	}
 	return hm
@@ -187,20 +187,25 @@ func (h *HexMap) SetMyBot(bot *client.Bot) {
 	h.markEmpty(bot.Position.X, bot.Position.Y, h.config.See)
 
 	// Initialize position history
-	h.positionHistory[bot.BotId] = [2]client.Position{bot.Position, bot.Position}
+	h.positionHistory[bot.BotId] = &[2]client.Position{bot.Position, bot.Position}
 }
 
 func (h *HexMap) MoveMyBot(botId int, pos client.Position) {
 	if bot, ok := h.myBots[botId]; ok {
 		h.markEmpty(pos.X, pos.Y, h.config.See)
 		bot.Position = pos
-		h.myBots[botId] = bot
+
+		// Keep bot mvoe history up to date
+		h.positionHistory[bot.BotId][1].X = h.positionHistory[bot.BotId][0].X
+		h.positionHistory[bot.BotId][1].Y = h.positionHistory[bot.BotId][0].Y
+		h.positionHistory[bot.BotId][0].X = pos.X
+		h.positionHistory[bot.BotId][0].Y = pos.Y
 	}
 }
 
 func (h *HexMap) HitBot(botId, damage int) {
-	if _, ok := h.myBots[botId]; ok {
-		h.myBots[botId].Hp -= damage
+	if bot, ok := h.myBots[botId]; ok {
+		bot.Hp -= damage
 	}
 }
 
@@ -209,11 +214,10 @@ func (h *HexMap) markEmpty(x, y, r int) {
 	for dx := -r; dx < r+1; dx++ {
 		for dy := max(-r, -dx-r); dy < min(r, -dx+r)+1; dy++ {
 			if p, ok := h.points[dx+x][dy+y]; ok {
-				p.Empty = true
+				h.points[dx+x][dy+y].Empty = true
 				for i := 0; i < len(p.PossibleBots); i++ {
 					p.PossibleBots[i] = false
 				}
-				h.points[dx+x][dy+y] = p
 			}
 		}
 	}

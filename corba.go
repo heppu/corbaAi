@@ -16,7 +16,7 @@ type CorbaAi struct {
 	OtherTeams []client.Team
 	Config     client.GameConfig
 	Map        *hexMap.HexMap
-	Actions    map[int]client.Action
+	Actions    map[int]*client.Action
 	WasLocated map[int]bool
 }
 
@@ -57,10 +57,9 @@ func (c *CorbaAi) Move() (actions []client.Action) {
 		// Set Action
 		a.Position = validMoves[rand.Intn(len(validMoves))]
 		a.Type = client.BOT_MOVE
-		c.Actions[botId] = a
 
 		// Add action to list
-		actions = append(actions, a)
+		actions = append(actions, *a)
 	}
 
 	// Run after each round
@@ -87,12 +86,12 @@ func (c *CorbaAi) OnStart(msg client.StartMessage) {
 	// Save important information about game to our Ai struct
 	c.MyTeam = msg.You
 	c.OtherTeams = msg.OtherTeams
-	c.Actions = make(map[int]client.Action)
+	c.Actions = make(map[int]*client.Action)
 	c.WasLocated = make(map[int]bool)
 
 	for i := 0; i < len(msg.You.Bots); i++ {
 		c.Map.SetMyBot(&msg.You.Bots[i])
-		c.Actions[msg.You.Bots[i].BotId] = client.Action{BotId: msg.You.Bots[i].BotId}
+		c.Actions[msg.You.Bots[i].BotId] = &client.Action{BotId: msg.You.Bots[i].BotId}
 	}
 
 	c.Map.InitEnemies(msg.OtherTeams)

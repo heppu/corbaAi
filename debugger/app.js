@@ -1,12 +1,12 @@
 $(document).ready(function() {
 	var socket;
 	var grid = {};
-	
+
 	connect();
 
 	function connect() {
 		try{
-			socket = new WebSocket("ws://127.0.0.1:8888/socket");
+			socket = new WebSocket("ws://localhost:9999/socket");
 
 			socket.onopen = function(){
 				console.log("Socket opened");
@@ -65,7 +65,7 @@ $(document).ready(function() {
 	//The number of columns and rows of the heatmap
 	var MapColumns = 2*14+1,
 		MapRows = 2*14+1;
-	
+
 	// Size of hexagon
 	//The maximum radius the hexagons can have to still fit the screen
 	//var hexRadius = d3.min([width/((MapColumns + 0.5) * Math.sqrt(3)),
@@ -80,7 +80,7 @@ $(document).ready(function() {
 	var hexbin = d3.hexbin()
 	    	       .radius(hexRadius);
 
-	//Calculate the center positions of each hexagon	
+	//Calculate the center positions of each hexagon
 	var points = [];
 	for (var i = 0; i < MapRows; i++) {
 	    for (var j = 0; j < MapColumns; j++) {
