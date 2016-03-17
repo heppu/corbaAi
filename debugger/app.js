@@ -14,9 +14,7 @@ $(document).ready(function() {
 
 			socket.onmessage = function(msg){
 				var res = JSON.parse(msg.data);
-				if ('map' in res) {
-					parseResponse(res.map);
-				}
+				parseResponse(res);
 			}
 
 			socket.onclose = function() {
@@ -33,15 +31,30 @@ $(document).ready(function() {
 	}
 
 	function parseResponse(res) {
-		for (var i=0; i<res.length; i++) {
-			if (grid[res[i].x + "_" + res[i].y] || grid[res[i].x + "_" + res[i].y] !== res[i].empty) {
-				if (!res[i].empty) {
-					$("#" + res[i].x + "_" + res[i].y).css("fill", "#002672");
+		var bots = res.bots || [];
+		var map = res.map || [];
+
+		for (var i=0; i<map.length; i++) {
+			if (grid[map[i].x + "_" + map[i].y] || grid[map[i].x + "_" + map[i].y] !== map[i].empty) {
+				if (!map[i].empty) {
+					$("#" + map[i].x + "_" + map[i].y).css("fill", "#002672");
 				} else {
-					$("#" + res[i].x + "_" + res[i].y).css("fill", "#95B2D2");
+					$("#" + map[i].x + "_" + map[i].y).css("fill", "#95B2D2");
 				}
+			} else {
+				$("#" + map[i].x + "_" + map[i].y).css("fill", "#002672");
 			}
-			grid[res[i].x + "_" + res[i].y] = res[i].empty;
+			grid[map[i].x + "_" + map[i].y] = map[i].empty;
+		}
+
+
+
+		for (var i=0; i<bots.length; i++) {
+			if (bots[i].alive) {
+				$("#" + bots[i].pos.x + "_" + bots[i].pos.y).css("fill", "#00CC2E")
+			} else {
+				$("#" + bots[i].pos.x + "_" + bots[i].pos.y).css("fill", "#A81013")
+			}
 		}
 	}
 
