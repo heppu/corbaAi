@@ -61,9 +61,12 @@ func (c *CorbaAi) Move() (actions []client.Action) {
 				continue
 			} else {
 				// Move randomly
-				validMoves := c.Map.GetValidMoves(botId)
-				a.Position = validMoves[rand.Intn(len(validMoves))]
+
+				a.Position = c.Map.Run(botId)
 				a.Type = client.BOT_MOVE
+				//validMoves := c.Map.GetValidMoves(botId)
+				//a.Position = validMoves[rand.Intn(len(validMoves))]
+				//a.Type = client.BOT_MOVE
 			}
 
 			// Add action to list
