@@ -267,18 +267,35 @@ func (h *HexMap) Radar(pos *client.Position) {
 }
 
 // Get run away move
-// 1. Gte all valid moves for bot
+// 1. Get all valid moves for bot
 // 2. Filter bad moves out
 // 3. Get random move from best moves
-// 4. If no best moves get one from valids
+// 4. If no best move get one from valid ones
 func (h *HexMap) Run(botId int) client.Position {
 	validMoves := h.GetValidMoves(botId)
-	// Use these to detect our movign direction
 
+	dangerZone := make(map[int]map[int]client.Position)
+	for bId := range h.myBots {
+		if bId != botId {
+			getPositionsInRangeMap(h.myBots[bId].Position.X, h.myBots[bId].Position.Y, h.config.Radar, dangerZone)
+		}
+	}
+
+	safeMoves := make([]client.Position, 0)
+	for _, pos := range validMoves {
+		if _, ok := dangerZone[pos.X][pos.Y]; !ok {
+			safeMoves = append(safeMoves, client.Position{pos.X, pos.Y})
+		}
+	}
+
+	if len(safeMoves) > 0 {
+		return safeMoves[rand.Intn(len(safeMoves))]
+	}
+	return validMoves[rand.Intn(len(validMoves))]
+
+	// Use these to detect our moving direction
 	//currentPosition := h.positionHistory[botId][0]
 	//lastPosition := h.positionHistory[botId][1]
-
-	return validMoves[rand.Intn(len(validMoves))]
 }
 
 // Get valid positios where bot can move
@@ -304,6 +321,17 @@ func getPositionsInRange(x, y, r int) (pos []client.Position) {
 		}
 	}
 	return
+}
+
+func getPositionsInRangeMap(x, y, r int, pos map[int]map[int]client.Position) {
+	for dx := -r; dx < r+1; dx++ {
+		for dy := max(-r, -dx-r); dy < min(r, -dx+r)+1; dy++ {
+			if _, ok := pos[dx+x]; !ok {
+				pos[dx+x] = make(map[int]client.Position)
+			}
+			pos[dx+x][dy+y] = client.Position{dx + x, dy + y}
+		}
+	}
 }
 
 // Select smallest integer from two integers

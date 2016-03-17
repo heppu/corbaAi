@@ -64,11 +64,10 @@ func (c *CorbaAi) Move() (actions []client.Action) {
 				c.WasLocated[botId] = false
 				continue
 			} else {
-				// Move randomly
+				// Random Radar
 				validMoves := c.Map.GetValidRadars(botId)
 				a.Position = validMoves[rand.Intn(len(validMoves))]
 				a.Type = client.BOT_RADAR
-
 				c.Radared[botId] = &a.Position
 			}
 
