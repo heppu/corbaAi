@@ -61,9 +61,8 @@ func (c *CorbaAi) Move() (actions []client.Action) {
 		// Add action to list
 		actions = append(actions, *a)
 	}
+	c.Map.Send()
 
-	// Run after each round
-	c.Map.Reduce()
 	return
 }
 
@@ -100,6 +99,9 @@ func (c *CorbaAi) OnStart(msg client.StartMessage) {
 // OnEvents will be called when server sends events message.
 func (c *CorbaAi) OnEvents(msg client.EventsMessage) {
 	//spew.Dump(msg)
+
+	// Run before each round
+	c.Map.Reduce()
 
 	for _, e := range msg.Events {
 		switch e.Type {

@@ -3,7 +3,6 @@ package hexMap
 import (
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/heppu/space-tyckiting/clients/go/client"
@@ -11,13 +10,9 @@ import (
 
 var upgrader = websocket.Upgrader{}
 
-type WebsocketHandler struct {
-	connections map[*websocket.Conn]interface{}
-	hm          *HexMap
-}
-
 type HexMap struct {
 	points          map[int]map[int]*Point
+	connections     map[*websocket.Conn]interface{}
 	myBots          map[int]*client.Bot
 	config          client.GameConfig
 	positionHistory map[int]*[2]client.Position
@@ -71,62 +66,51 @@ func NewHexMap(c client.GameConfig, visualize bool) *HexMap {
 	}
 
 	if visualize {
-		ws := WebsocketHandler{hm: hm}
-		ws.connections = make(map[*websocket.Conn]interface{})
-
-		http.HandleFunc("/socket", ws.listen)
+		hm.connections = make(map[*websocket.Conn]interface{})
+		http.HandleFunc("/socket", hm.listen)
 		http.Handle("/", http.FileServer(http.Dir("debugger")))
-		fmt.Println("listen and server")
-		go http.ListenAndServe("localhost:9999", nil)
-		go ws.sender()
+		go http.ListenAndServe("localhost:8888", nil)
 	}
 	return hm
 }
 
 // The json serialization is terrible here
-func (ws *WebsocketHandler) sender() {
-	ticker := time.NewTicker(1 * time.Second)
-	var err error
-	go func() {
-		for {
-			select {
-			case <-ticker.C:
-				// Create Json data
-				r := Info{}
-				// Create map points
-				r.Map = make([]InfoPoint, 0)
-				for i, _ := range ws.hm.points {
-					for j, _ := range ws.hm.points[i] {
-						bots := make([]int, 0)
-						for k, _ := range ws.hm.points[i][j].PossibleBots {
-							bots = append(bots, k)
-						}
-						r.Map = append(r.Map, InfoPoint{
-							X:     i,
-							Y:     j,
-							Empty: ws.hm.points[i][j].Empty,
-							Bots:  bots,
-						})
-					}
-				}
-				// Add bots
-				r.Bots = make([]client.Bot, 0)
-				for _, v := range ws.hm.myBots {
-					r.Bots = append(r.Bots, *v)
-				}
-
-				// Send data to all open connections
-				for c := range ws.connections {
-					if err = c.WriteJSON(r); err != nil {
-						fmt.Printf("[websocket][error] : Could not send new data: %s\n", err)
-					}
-				}
+func (h *HexMap) Send() {
+	// Create Json data
+	r := Info{}
+	// Create map points
+	r.Map = make([]InfoPoint, 0)
+	for i, _ := range h.points {
+		for j, _ := range h.points[i] {
+			bots := make([]int, 0)
+			for k, _ := range h.points[i][j].PossibleBots {
+				bots = append(bots, k)
 			}
+			r.Map = append(r.Map, InfoPoint{
+				X:     i,
+				Y:     j,
+				Empty: h.points[i][j].Empty,
+				Bots:  bots,
+			})
 		}
-	}()
+	}
+	// Add bots
+	r.Bots = make([]client.Bot, 0)
+	for _, v := range h.myBots {
+		r.Bots = append(r.Bots, *v)
+	}
+
+	// Send data to all open connections
+	var err error
+	for c := range h.connections {
+		if err = c.WriteJSON(r); err != nil {
+			fmt.Printf("[websocket][error] : Could not send new data: %s\n", err)
+		}
+	}
+
 }
 
-func (ws *WebsocketHandler) listen(w http.ResponseWriter, r *http.Request) {
+func (h *HexMap) listen(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		fmt.Printf("[websocket][error] : Could not create new socket: %s\n", err)
@@ -134,14 +118,14 @@ func (ws *WebsocketHandler) listen(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Println("[websocket][verbose] : New socket opened.")
-	ws.connections[conn] = nil
+	h.connections[conn] = nil
 	defer func() {
 		conn.Close()
-		delete(ws.connections, conn)
+		delete(h.connections, conn)
 	}()
 
 	// Send game configurations
-	conn.WriteJSON(ws.hm.config)
+	conn.WriteJSON(h.config)
 
 	for {
 		if _, _, err = conn.ReadMessage(); err != nil {
@@ -154,7 +138,33 @@ func (ws *WebsocketHandler) listen(w http.ResponseWriter, r *http.Request) {
 // This will be called first thing on each round
 // We should use flood fill, etc. to keep map up to date
 func (h *HexMap) Reduce() {
+	for m := 0; m < h.config.Move; m++ {
+		markUnOpened := make([]client.Position, 0)
+		// Loop through all points
+		for i, _ := range h.points {
+			for j, _ := range h.points[i] {
+				// Check if point is open
+				if h.points[i][j].Empty {
+					// Check if point has unopened points around
+					if !h.points[i][j-1].Empty || !h.points[i][j+1].Empty ||
+						!h.points[i+1][j].Empty || !h.points[i+1][j-1].Empty ||
+						!h.points[i-1][j].Empty || !h.points[i-1][j+1].Empty {
+						markUnOpened = append(markUnOpened, client.Position{i, j})
+					}
 
+				}
+			}
+		}
+
+		// Mark points unopened
+		for _, p := range markUnOpened {
+			old := h.points[p.X][p.Y]
+			old.Empty = false
+			h.points[p.X][p.Y] = old
+		}
+
+		// Exapand possible bot positions
+	}
 }
 
 func (h *HexMap) InitEnemies(teams []client.Team) {
@@ -211,6 +221,18 @@ func (h *HexMap) HitBot(botId, damage int) {
 
 func (h *HexMap) markEmpty(x, y, r int) {
 	r = r - 1
+	// Single point case
+	if r == 0 {
+		if p, ok := h.points[x][y]; ok {
+			p.Empty = true
+			for i := 0; i < len(p.PossibleBots); i++ {
+				p.PossibleBots[i] = false
+			}
+			h.points[x][y] = p
+		}
+		return
+	}
+
 	for dx := -r; dx < r+1; dx++ {
 		for dy := max(-r, -dx-r); dy < min(r, -dx+r)+1; dy++ {
 			if p, ok := h.points[dx+x][dy+y]; ok {
