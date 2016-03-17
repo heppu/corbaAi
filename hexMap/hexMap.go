@@ -139,17 +139,15 @@ func (h *HexMap) listen(w http.ResponseWriter, r *http.Request) {
 // We should use flood fill, etc. to keep map up to date
 func (h *HexMap) Reduce() {
 	for m := 0; m < h.config.Move; m++ {
-		markUnOpened := make([]client.Position, 0)
+		markUnOpened := make([]*Point, 0)
 		// Loop through all points
 		for i, _ := range h.points {
-			for j, _ := range h.points[i] {
+			for j, p := range h.points[i] {
 				// Check if point is open
-				if h.points[i][j].Empty {
+				if p.Empty {
 					// Check if point has unopened points around
-					if !h.points[i][j-1].Empty || !h.points[i][j+1].Empty ||
-						!h.points[i+1][j].Empty || !h.points[i+1][j-1].Empty ||
-						!h.points[i-1][j].Empty || !h.points[i-1][j+1].Empty {
-						markUnOpened = append(markUnOpened, client.Position{i, j})
+					if h.checkIfBorderPoint(i, j) {
+						markUnOpened = append(markUnOpened, p)
 					}
 
 				}
@@ -158,13 +156,25 @@ func (h *HexMap) Reduce() {
 
 		// Mark points unopened
 		for _, p := range markUnOpened {
-			old := h.points[p.X][p.Y]
-			old.Empty = false
-			h.points[p.X][p.Y] = old
+			p.Empty = false
 		}
 
 		// Exapand possible bot positions
 	}
+}
+
+func (h *HexMap) checkIfBorderPoint(x, y int) bool {
+	r := 1
+	for dx := -r; dx < r+1; dx++ {
+		for dy := max(-r, -dx-r); dy < min(r, -dx+r)+1; dy++ {
+			if p, ok := h.points[dx+x][dy+y]; ok {
+				if p.Empty {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }
 
 func (h *HexMap) InitEnemies(teams []client.Team) {

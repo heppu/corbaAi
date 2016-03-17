@@ -75,6 +75,7 @@ func (c *CorbaAi) OnConnected(msg client.ConnectedMessage) {
 	// Create new map
 	c.Config = msg.Config
 	c.Map = hexMap.NewHexMap(msg.Config, true)
+	c.Map.Send()
 }
 
 // OnStart will be called when game starts and server sends start message
@@ -94,6 +95,7 @@ func (c *CorbaAi) OnStart(msg client.StartMessage) {
 	}
 
 	c.Map.InitEnemies(msg.OtherTeams)
+	c.Map.Send()
 }
 
 // OnEvents will be called when server sends events message.
