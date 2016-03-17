@@ -42,8 +42,10 @@ func (c *CorbaAi) Move() (actions []client.Action) {
 	switch len(c.Actions) {
 	case 1:
 		log.Println("Do something")
+		break
 	case 2:
 		log.Println("Do something")
+		break
 	default:
 		for botId, a := range c.Actions {
 			if c.WasLocated[botId] {
@@ -66,6 +68,7 @@ func (c *CorbaAi) Move() (actions []client.Action) {
 
 			// Add action to list
 			actions = append(actions, *a)
+			break
 		}
 	}
 
