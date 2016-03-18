@@ -31,15 +31,23 @@ $(document).ready(function() {
 	}
 
 	function parseResponse(res) {
+		console.log(res)
 		var bots = res.bots || [];
 		var map = res.map || [];
 
 		for (var i=0; i<map.length; i++) {
+			// If there's change to previously stored value
 			if (grid[map[i].x + "_" + map[i].y] || grid[map[i].x + "_" + map[i].y] !== map[i].empty) {
+				// If area has not been discovered
 				if (!map[i].empty) {
 					$("#" + map[i].x + "_" + map[i].y).css("fill", "#002672");
-				} else {
-					$("#" + map[i].x + "_" + map[i].y).css("fill", "#95B2D2");
+				} else { // Area discovered
+					// If enemy bots have been discovered in the area
+					if (map[i].bots.length) {
+						$("#" + map[i].x + "_" + map[i].y).css("fill", "#B80000");	
+					} else { // Empty area
+						$("#" + map[i].x + "_" + map[i].y).css("fill", "#95B2D2");	
+					}
 				}
 			} else {
 				$("#" + map[i].x + "_" + map[i].y).css("fill", "#002672");
@@ -72,8 +80,8 @@ $(document).ready(function() {
 	//var width = $(window).width() - margin.left - margin.right - 40;
 	//var height = $(window).height() - margin.top - margin.bottom - 80;
 	//So I set it fixed to
-	var width = 850;
-	var height = 850;
+	var width = 700;
+	var height = 700;
 
 	//The number of columns and rows of the heatmap
 	var MapColumns = 2*14+1,
@@ -83,7 +91,7 @@ $(document).ready(function() {
 	//The maximum radius the hexagons can have to still fit the screen
 	//var hexRadius = d3.min([width/((MapColumns + 0.5) * Math.sqrt(3)),
 	//			height/((MapRows + 1/3) * 1.5)]);
-	var hexRadius = 20;
+	var hexRadius = 17;
 
 	//Set the new height and width of the SVG based on the max possible
 	width = MapColumns*hexRadius*Math.sqrt(3);
