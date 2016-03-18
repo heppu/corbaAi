@@ -32,7 +32,7 @@ type Info struct {
 type InfoPoint struct {
 	X      int   `json:"x"`
 	Y      int   `json:"y"`
-	Probed bool  `json:"opened"`
+	Probed bool  `json:"probed"`
 	Bots   []int `json:"bots"`
 }
 
