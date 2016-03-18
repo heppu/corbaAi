@@ -360,7 +360,7 @@ func (h *HexMap) GetValidCannons(botId int) []client.Position {
 
 // Get valid positios where bot can use rader
 func (h *HexMap) GetValidRadars(botId int) []client.Position {
-	return h.getPositionsInRange(0, 0, h.config.FieldRadius)
+	return h.getPositionsInRange(0, 0, h.config.FieldRadius-h.config.Radar)
 }
 
 // Get valid positions in hexagon for given radius
