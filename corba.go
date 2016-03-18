@@ -77,13 +77,15 @@ func (c *CorbaAi) Move() (actions []client.Action) {
 
 			// If all other bots are shooting use last one to radar
 			if shooting == len(c.Actions)-1 {
-				a.Position = *c.EnemyLocations[*c.LastShot]
-				a.Type = client.BOT_RADAR
-				c.Radared[botId] = &a.Position
+				if _, ok := c.EnemyLocations[*c.LastShot]; ok {
+					a.Position = *c.EnemyLocations[*c.LastShot]
+					a.Type = client.BOT_RADAR
+					c.Radared[botId] = &a.Position
 
-				// Add action to list
-				actions = append(actions, *a)
-				continue
+					// Add action to list
+					actions = append(actions, *a)
+					continue
+				}
 			}
 
 			// We have shot some bot last round so lets go after him

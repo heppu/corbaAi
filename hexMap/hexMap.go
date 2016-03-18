@@ -364,10 +364,12 @@ func (h *HexMap) GetValidRadars(botId int) []client.Position {
 }
 
 // Get valid positions in hexagon for given radius
-func getPositionsInRange(x, y, r int) (pos []client.Position) {
+func (h *HexMap) getPositionsInRange(x, y, r int) (pos []client.Position) {
 	for dx := -r; dx < r+1; dx++ {
 		for dy := max(-r, -dx-r); dy < min(r, -dx+r)+1; dy++ {
-			pos = append(pos, client.Position{dx + x, dy + y})
+			if _, ok := h.points[dx+x][dy+y]; ok {
+				pos = append(pos, client.Position{dx + x, dy + y})
+			}
 		}
 	}
 	return
