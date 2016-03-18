@@ -21,7 +21,7 @@ type HexMap struct {
 
 type Point struct {
 	PossibleBots map[int]bool
-	Empty        bool
+	Probed       bool
 }
 
 type Info struct {
@@ -30,10 +30,10 @@ type Info struct {
 }
 
 type InfoPoint struct {
-	X     int   `json:"x"`
-	Y     int   `json:"y"`
-	Empty bool  `json:"empty"`
-	Bots  []int `json:"bots"`
+	X      int   `json:"x"`
+	Y      int   `json:"y"`
+	Probed bool  `json:"opened"`
+	Bots   []int `json:"bots"`
 }
 
 func NewHexMap(c client.GameConfig, visualize bool) *HexMap {
@@ -54,7 +54,7 @@ func NewHexMap(c client.GameConfig, visualize bool) *HexMap {
 			pb := make(map[int]bool)
 			hm.points[i][j] = &Point{
 				PossibleBots: pb,
-				Empty:        false,
+				Probed:       false,
 			}
 			z++
 		}
@@ -88,10 +88,10 @@ func (h *HexMap) Send() {
 				bots = append(bots, k)
 			}
 			r.Map = append(r.Map, InfoPoint{
-				X:     i,
-				Y:     j,
-				Empty: h.points[i][j].Empty,
-				Bots:  bots,
+				X:      i,
+				Y:      j,
+				Probed: h.points[i][j].Probed,
+				Bots:   bots,
 			})
 		}
 	}
@@ -146,7 +146,7 @@ func (h *HexMap) Reduce() {
 		for i, _ := range h.points {
 			for j, p := range h.points[i] {
 				// Check if point is open
-				if p.Empty {
+				if p.Probed {
 					// Check if point has unopened points around
 					if h.checkIfBorderPoint(i, j) {
 						markUnOpened = append(markUnOpened, p)
@@ -157,7 +157,7 @@ func (h *HexMap) Reduce() {
 
 		// Mark points unopened
 		for _, p := range markUnOpened {
-			p.Empty = false
+			p.Probed = false
 		}
 		// TODO: Exapand possible bot positions
 	}
@@ -168,7 +168,7 @@ func (h *HexMap) checkIfBorderPoint(x, y int) bool {
 	for dx := -r; dx < r+1; dx++ {
 		for dy := max(-r, -dx-r); dy < min(r, -dx+r)+1; dy++ {
 			if p, ok := h.points[dx+x][dy+y]; ok {
-				if !p.Empty {
+				if !p.Probed {
 					return true
 				}
 			}
@@ -200,25 +200,28 @@ func (h *HexMap) InitEnemies(teams []client.Team) {
 	*/
 }
 
-func (h *HexMap) DetectEnemyBot(botId int) {
-	/*
-		// Remove enemy bot possible locations from other points
-		for dx := -r; dx < r+1; dx++ {
-			for dy := max(-r, -dx-r); dy < min(r, -dx+r)+1; dy++ {
-				if p, ok := h.points[dx+x][dy+y]; ok {
-					h.points[dx+x][dy+y].Empty = true
-					for i := 0; i < len(p.PossibleBots); i++ {
-						p.PossibleBots[i] = false
-					}
+func (h *HexMap) DetectEnemyBot(botId int, pos client.Position) {
+	// Remove enemy bot possible locations from other points
+	var x, y int
+	r := h.config.FieldRadius
+	for dx := -r; dx < r+1; dx++ {
+		for dy := max(-r, -dx-r); dy < min(r, -dx+r)+1; dy++ {
+			if p, ok := h.points[dx+x][dy+y]; ok {
+				if p.PossibleBots[botId] {
+					p.PossibleBots[botId] = false
+					break
 				}
 			}
 		}
-	*/
+	}
+
+	// Mark bot in position
+	h.points[pos.X][pos.Y].PossibleBots[botId] = true
 }
 
 func (h *HexMap) SetMyBot(bot *client.Bot) {
 	h.myBots[bot.BotId] = bot
-	h.markEmpty(bot.Position.X, bot.Position.Y, h.config.See)
+	h.markProbed(bot.Position.X, bot.Position.Y, h.config.See)
 
 	// Initialize position history
 	h.positionHistory[bot.BotId] = &[2]client.Position{bot.Position, bot.Position}
@@ -226,7 +229,7 @@ func (h *HexMap) SetMyBot(bot *client.Bot) {
 
 func (h *HexMap) MoveMyBot(botId int, pos client.Position) {
 	if bot, ok := h.myBots[botId]; ok {
-		h.markEmpty(pos.X, pos.Y, h.config.See)
+		h.markProbed(pos.X, pos.Y, h.config.See)
 		bot.Position = pos
 
 		// Keep bot mvoe history up to date
@@ -239,7 +242,7 @@ func (h *HexMap) MoveMyBot(botId int, pos client.Position) {
 
 func (h *HexMap) Stay(botId int) {
 	if positions, ok := h.positionHistory[botId]; ok {
-		h.markEmpty(positions[0].X, positions[0].Y, h.config.See)
+		h.markProbed(positions[0].X, positions[0].Y, h.config.See)
 	}
 }
 
@@ -249,11 +252,11 @@ func (h *HexMap) HitBot(botId, damage int) {
 	}
 }
 
-func (h *HexMap) markEmpty(x, y, r int) {
+func (h *HexMap) markProbed(x, y, r int) {
 	// Single point case
 	if r == 0 {
 		if p, ok := h.points[x][y]; ok {
-			p.Empty = true
+			p.Probed = true
 			for i := 0; i < len(p.PossibleBots); i++ {
 				p.PossibleBots[i] = false
 			}
@@ -264,7 +267,7 @@ func (h *HexMap) markEmpty(x, y, r int) {
 	for dx := -r; dx < r+1; dx++ {
 		for dy := max(-r, -dx-r); dy < min(r, -dx+r)+1; dy++ {
 			if p, ok := h.points[dx+x][dy+y]; ok {
-				h.points[dx+x][dy+y].Empty = true
+				h.points[dx+x][dy+y].Probed = true
 				for i := 0; i < len(p.PossibleBots); i++ {
 					p.PossibleBots[i] = false
 				}
@@ -274,7 +277,7 @@ func (h *HexMap) markEmpty(x, y, r int) {
 }
 
 func (h *HexMap) Radar(pos *client.Position) {
-	h.markEmpty(pos.X, pos.Y, h.config.Radar)
+	h.markProbed(pos.X, pos.Y, h.config.Radar)
 }
 
 // Get run away move
