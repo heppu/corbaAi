@@ -41,12 +41,14 @@ func (c *CorbaAi) Move() (actions []client.Action) {
 
 	// Choose tactic base on how many bots we have
 	switch len(c.Actions) {
-	case 1:
-		log.Println("Do something")
-		break
-	case 2:
-		log.Println("Do something")
-		break
+	/*
+		case 1:
+			log.Println("Do something")
+			break
+		case 2:
+			log.Println("Do something")
+			break
+	*/
 	default:
 		for botId, a := range c.Actions {
 			// Set previous radared to nil
@@ -54,7 +56,7 @@ func (c *CorbaAi) Move() (actions []client.Action) {
 
 			if c.WasLocated[botId] {
 				// Activate run tactic here
-				log.Printf("Bot %d was located run!")
+				log.Printf("Bot %d was located run!", botId)
 
 				// Get optimal new position from map
 				a.Position = c.Map.Run(botId)
@@ -62,12 +64,13 @@ func (c *CorbaAi) Move() (actions []client.Action) {
 
 				// Reset hit here
 				c.WasLocated[botId] = false
-				continue
 			} else {
 				// Random Radar
 				validMoves := c.Map.GetValidRadars(botId)
+
 				a.Position = validMoves[rand.Intn(len(validMoves))]
 				a.Type = client.BOT_RADAR
+
 				c.Radared[botId] = &a.Position
 			}
 
@@ -152,6 +155,7 @@ func (c *CorbaAi) OnEvents(msg client.EventsMessage) {
 
 		case client.EVENT_RADAR_ECHO:
 			log.Printf("[corba][OnEvents][radarEcho] : Pos %v\n", e.Position)
+			c.Map.DetectEnemyBot(int(e.BotId.Int64))
 
 		// This will happen when too bots see each other
 		case client.EVENT_SEE:
@@ -163,7 +167,7 @@ func (c *CorbaAi) OnEvents(msg client.EventsMessage) {
 			c.WasLocated[int(e.BotId.Int64)] = true
 
 		case client.EVENT_DAMAGED:
-			log.Printf("[corba][OnEvents][damaged] : Bot %d\n", e.BotId.Int64)
+			log.Printf("[corba][OnEvents][damaged] : Bot %d damage %d\n", e.BotId.Int64, e.Damage.Int64)
 			c.WasLocated[int(e.BotId.Int64)] = true
 			c.Map.HitBot(int(e.BotId.Int64), int(e.Damage.Int64))
 
