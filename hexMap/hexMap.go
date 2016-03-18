@@ -11,6 +11,8 @@ import (
 
 var upgrader = websocket.Upgrader{}
 
+var moveFuncs = [6]func(x, y int) (a, b int){moveRight, moveUpRight, moveUpLeft, moveLeft, moveDownLeft, moveDownRight}
+
 type HexMap struct {
 	points          map[int]map[int]*Point
 	connections     map[*websocket.Conn]interface{}
@@ -396,6 +398,20 @@ func min(a, b int) int {
 		return b
 	}
 	return a
+}
+
+func (h *HexMap) getValidRing(x, y, r int) (pos []client.Position) {
+	x -= r
+	y += r
+	for _, f := range moveFuncs {
+		for i := 0; i < r; i++ {
+			x, y = f(x, y)
+			if _, ok := h.points[x][y]; ok {
+				pos = append(pos, client.Position{x, y})
+			}
+		}
+	}
+	return
 }
 
 // Select biggest integer from two integers
