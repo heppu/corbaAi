@@ -58,16 +58,6 @@ func (c *CorbaAi) Move() (actions []client.Action) {
 			// Set previous radared to nil
 			c.Radared[botId] = nil
 
-			// Fall back to radaring
-			validMoves := c.Map.GetValidRadars(botId)
-			a.Position = validMoves[rand.Intn(len(validMoves))]
-			a.Type = client.BOT_RADAR
-			c.Radared[botId] = &a.Position
-
-			// Add action to list
-			actions = append(actions, *a)
-			continue
-
 			// If our bot was seen activate run tactic
 			if c.WasLocated[botId] {
 				log.Printf("Bot %d was located run!", botId)
@@ -125,6 +115,14 @@ func (c *CorbaAi) Move() (actions []client.Action) {
 				continue
 			}
 
+			// Fall back to radaring
+			validMoves := c.Map.GetValidRadars(botId)
+			a.Position = validMoves[rand.Intn(len(validMoves))]
+			a.Type = client.BOT_RADAR
+			c.Radared[botId] = &a.Position
+
+			// Add action to list
+			actions = append(actions, *a)
 		}
 		break
 	}
@@ -175,9 +173,6 @@ func (c *CorbaAi) OnEvents(msg client.EventsMessage) {
 
 	// Run before each round
 	c.Map.Reduce()
-
-	// Send after reducer
-	c.Map.Send()
 
 	// Bots that didn't move
 	stay := make(map[int]interface{})
