@@ -31,15 +31,14 @@ $(document).ready(function() {
 	}
 
 	function parseResponse(res) {
-		console.log(res)
 		var bots = res.bots || [];
 		var map = res.map || [];
 
 		for (var i=0; i<map.length; i++) {
 			// If there's change to previously stored value
-			if (grid[map[i].x + "_" + map[i].y] || grid[map[i].x + "_" + map[i].y] !== map[i].empty) {
+			if (grid[map[i].x + "_" + map[i].y] || grid[map[i].x + "_" + map[i].y] !== map[i].probed) {
 				// If area has not been discovered
-				if (!map[i].empty) {
+				if (!map[i].probed) {
 					$("#" + map[i].x + "_" + map[i].y).css("fill", "#002672");
 				} else { // Area discovered
 					// If enemy bots have been discovered in the area
@@ -52,7 +51,7 @@ $(document).ready(function() {
 			} else {
 				$("#" + map[i].x + "_" + map[i].y).css("fill", "#002672");
 			}
-			grid[map[i].x + "_" + map[i].y] = map[i].empty;
+			grid[map[i].x + "_" + map[i].y] = map[i].probed;
 		}
 
 
