@@ -312,6 +312,10 @@ func (h *HexMap) markProbed(x, y, r int) {
 	}
 }
 
+func (h *HexMap) GetCannonPosition(pos client.Position) client.Position {
+	return client.Position{pos.X, pos.Y}
+}
+
 func (h *HexMap) Radar(pos *client.Position) {
 	h.markProbed(pos.X, pos.Y, h.config.Radar)
 }
@@ -400,4 +404,40 @@ func max(a, b int) int {
 		return b
 	}
 	return a
+}
+
+func moveRight(x, y int) (a, b int) {
+	a = x + 1
+	b = y
+	return
+}
+
+func moveUpRight(x, y int) (a, b int) {
+	a = x + 1
+	b = y - 1
+	return
+}
+
+func moveUpLeft(x, y int) (a, b int) {
+	a = x
+	b = y - 1
+	return
+}
+
+func moveLeft(x, y int) (a, b int) {
+	a = x - 1
+	b = y
+	return
+}
+
+func moveDownLeft(x, y int) (a, b int) {
+	a = x - 1
+	b = y + 1
+	return
+}
+
+func moveDownRight(x, y int) (a, b int) {
+	a = x
+	b = y + 1
+	return
 }
