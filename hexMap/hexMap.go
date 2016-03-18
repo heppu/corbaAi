@@ -84,8 +84,10 @@ func (h *HexMap) Send() {
 	for i, _ := range h.points {
 		for j, _ := range h.points[i] {
 			bots := make([]int, 0)
-			for k, _ := range h.points[i][j].PossibleBots {
-				bots = append(bots, k)
+			for k, v := range h.points[i][j].PossibleBots {
+				if v {
+					bots = append(bots, k)
+				}
 			}
 			r.Map = append(r.Map, InfoPoint{
 				X:      i,
@@ -93,6 +95,9 @@ func (h *HexMap) Send() {
 				Probed: h.points[i][j].Probed,
 				Bots:   bots,
 			})
+			if len(bots) > 0 {
+				fmt.Println(i, j)
+			}
 		}
 	}
 	// Add bots
@@ -141,6 +146,7 @@ func (h *HexMap) listen(w http.ResponseWriter, r *http.Request) {
 func (h *HexMap) Reduce() {
 	for m := 0; m < h.config.Move; m++ {
 		markUnOpened := make([]*Point, 0)
+		markBots := make(map[int]*[]*Point)
 
 		// Loop through all points
 		for i, _ := range h.points {
@@ -152,6 +158,13 @@ func (h *HexMap) Reduce() {
 						markUnOpened = append(markUnOpened, p)
 					}
 				}
+				continue
+				// Check if point might contain enemy bots
+				for k, v := range p.PossibleBots {
+					if v {
+						h.expandBotArea(i, j, k, markBots)
+					}
+				}
 			}
 		}
 
@@ -159,8 +172,34 @@ func (h *HexMap) Reduce() {
 		for _, p := range markUnOpened {
 			p.Probed = false
 		}
-		// TODO: Exapand possible bot positions
+		continue
+		// Exapand possible bot positions
+		for botId, arr := range markBots {
+			for _, p := range *arr {
+				p.PossibleBots[botId] = true
+			}
+		}
 	}
+}
+
+func (h *HexMap) expandBotArea(x, y, botId int, mark map[int]*[]*Point) bool {
+	r := 1
+	for dx := -r; dx < r+1; dx++ {
+		for dy := max(-r, -dx-r); dy < min(r, -dx+r)+1; dy++ {
+			if p, ok := h.points[dx+x][dy+y]; ok {
+				if !p.PossibleBots[botId] {
+					if _, ok := mark[botId]; !ok {
+						arr := make([]*Point, 0)
+						mark[botId] = &arr
+					}
+					newArr := *mark[botId]
+					newArr = append(newArr, p)
+					mark[botId] = &newArr
+				}
+			}
+		}
+	}
+	return false
 }
 
 func (h *HexMap) checkIfBorderPoint(x, y int) bool {
@@ -265,8 +304,8 @@ func (h *HexMap) markProbed(x, y, r int) {
 		for dy := max(-r, -dx-r); dy < min(r, -dx+r)+1; dy++ {
 			if p, ok := h.points[dx+x][dy+y]; ok {
 				h.points[dx+x][dy+y].Probed = true
-				for i := 0; i < len(p.PossibleBots); i++ {
-					p.PossibleBots[i] = false
+				for id, _ := range p.PossibleBots {
+					p.PossibleBots[id] = false
 				}
 			}
 		}

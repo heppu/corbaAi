@@ -5,7 +5,7 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
+	//"github.com/davecgh/go-spew/spew"
 	"github.com/heppu/corbaAi/hexMap"
 	"github.com/heppu/space-tyckiting/clients/go/client"
 )
@@ -57,6 +57,16 @@ func (c *CorbaAi) Move() (actions []client.Action) {
 		for botId, a := range c.Actions {
 			// Set previous radared to nil
 			c.Radared[botId] = nil
+
+			// Fall back to radaring
+			validMoves := c.Map.GetValidRadars(botId)
+			a.Position = validMoves[rand.Intn(len(validMoves))]
+			a.Type = client.BOT_RADAR
+			c.Radared[botId] = &a.Position
+
+			// Add action to list
+			actions = append(actions, *a)
+			continue
 
 			// If our bot was seen activate run tactic
 			if c.WasLocated[botId] {
@@ -115,15 +125,6 @@ func (c *CorbaAi) Move() (actions []client.Action) {
 				continue
 			}
 
-			// Fall back to radaring
-			validMoves := c.Map.GetValidRadars(botId)
-			a.Position = validMoves[rand.Intn(len(validMoves))]
-			a.Type = client.BOT_RADAR
-			c.Radared[botId] = &a.Position
-
-			// Add action to list
-			actions = append(actions, *a)
-
 		}
 		break
 	}
@@ -174,6 +175,9 @@ func (c *CorbaAi) OnEvents(msg client.EventsMessage) {
 
 	// Run before each round
 	c.Map.Reduce()
+
+	// Send after reducer
+	c.Map.Send()
 
 	// Bots that didn't move
 	stay := make(map[int]interface{})
@@ -254,7 +258,12 @@ func (c *CorbaAi) OnEvents(msg client.EventsMessage) {
 // OnEvents will be called when server sends events message.
 func (c *CorbaAi) OnEnd(msg client.EndMessage) {
 	log.Println("[corba][OnEnd]")
-	spew.Dump(msg)
+	//spew.Dump(msg)
+	if c.MyTeam.TeamId == msg.WinnerTeamId {
+		log.Println("VICTORY!")
+		return
+	}
+	log.Println("We lost...")
 }
 
 // OnError will be called when server sends message that has unknown message type.
