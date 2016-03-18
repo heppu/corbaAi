@@ -350,17 +350,17 @@ func (h *HexMap) Run(botId int) client.Position {
 
 // Get valid positios where bot can move
 func (h *HexMap) GetValidMoves(botId int) []client.Position {
-	return getPositionsInRange(h.myBots[botId].Position.X, h.myBots[botId].Position.Y, h.config.Move)
+	return h.getPositionsInRange(h.myBots[botId].Position.X, h.myBots[botId].Position.Y, h.config.Move)
 }
 
 // Get valid positios where bot can use cannon
 func (h *HexMap) GetValidCannons(botId int) []client.Position {
-	return getPositionsInRange(0, 0, h.config.FieldRadius)
+	return h.getPositionsInRange(0, 0, h.config.FieldRadius)
 }
 
 // Get valid positios where bot can use rader
 func (h *HexMap) GetValidRadars(botId int) []client.Position {
-	return getPositionsInRange(0, 0, h.config.FieldRadius)
+	return h.getPositionsInRange(0, 0, h.config.FieldRadius)
 }
 
 // Get valid positions in hexagon for given radius
