@@ -328,7 +328,8 @@ func (h *HexMap) Radar(pos *client.Position) {
 // 3. Get random move from best moves
 // 4. If no best move get one from valid ones
 func (h *HexMap) Run(botId int) client.Position {
-	validMoves := h.GetValidMoves(botId)
+	//validMoves := h.GetValidMoves(botId)
+	validMoves := h.getValidRing(h.myBots[botId].Position.X, h.myBots[botId].Position.Y, h.config.Move)
 
 	dangerZone := make(map[int]map[int]client.Position)
 	for bId := range h.myBots {
@@ -403,6 +404,7 @@ func min(a, b int) int {
 func (h *HexMap) getValidRing(x, y, r int) (pos []client.Position) {
 	x -= r
 	y += r
+
 	for _, f := range moveFuncs {
 		for i := 0; i < r; i++ {
 			x, y = f(x, y)
