@@ -201,17 +201,19 @@ func (h *HexMap) InitEnemies(teams []client.Team) {
 }
 
 func (h *HexMap) DetectEnemyBot(botId int) {
-	// Remove enemy bot possible locations from other points
-	for dx := -r; dx < r+1; dx++ {
-		for dy := max(-r, -dx-r); dy < min(r, -dx+r)+1; dy++ {
-			if p, ok := h.points[dx+x][dy+y]; ok {
-				h.points[dx+x][dy+y].Empty = true
-				for i := 0; i < len(p.PossibleBots); i++ {
-					p.PossibleBots[i] = false
+	/*
+		// Remove enemy bot possible locations from other points
+		for dx := -r; dx < r+1; dx++ {
+			for dy := max(-r, -dx-r); dy < min(r, -dx+r)+1; dy++ {
+				if p, ok := h.points[dx+x][dy+y]; ok {
+					h.points[dx+x][dy+y].Empty = true
+					for i := 0; i < len(p.PossibleBots); i++ {
+						p.PossibleBots[i] = false
+					}
 				}
 			}
 		}
-	}
+	*/
 }
 
 func (h *HexMap) SetMyBot(bot *client.Bot) {
