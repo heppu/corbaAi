@@ -207,10 +207,7 @@ func (h *HexMap) DetectEnemyBot(botId int, pos client.Position) {
 	for dx := -r; dx < r+1; dx++ {
 		for dy := max(-r, -dx-r); dy < min(r, -dx+r)+1; dy++ {
 			if p, ok := h.points[dx+x][dy+y]; ok {
-				if p.PossibleBots[botId] {
-					p.PossibleBots[botId] = false
-					break
-				}
+				p.PossibleBots[botId] = false
 			}
 		}
 	}
