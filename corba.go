@@ -68,7 +68,7 @@ func (c *CorbaAi) Move() (actions []client.Action) {
 			for botId, a := range c.Actions {
 
 				// Allow one bot to run
-				if located, ok := c.WasLocated[botId]; ok && located && running == 0 {
+				if located, ok := c.WasHit[botId]; ok && located && running == 0 {
 					// Check if we have detected enemies
 					// Run towards them hoping they use friendly fire d:D
 					if len(c.EnemyLocations) > 0 {
@@ -101,7 +101,7 @@ func (c *CorbaAi) Move() (actions []client.Action) {
 				actions = append(actions, *a)
 				i++
 			}
-			c.Map.Send()
+			//c.Map.Send()
 			return
 		}
 	}
@@ -128,7 +128,7 @@ func (c *CorbaAi) Move() (actions []client.Action) {
 		}
 
 		// If our bot was seen activate run tactic
-		if c.WasLocated[botId] {
+		if c.WasHit[botId] {
 			log.Printf("Bot %d was located run!", botId)
 
 			// Check if we have detected enemies
@@ -164,7 +164,7 @@ func (c *CorbaAi) Move() (actions []client.Action) {
 	}
 
 	//spew.Dump(actions)
-	c.Map.Send()
+	//c.Map.Send()
 	return
 }
 
@@ -177,7 +177,7 @@ func (c *CorbaAi) OnConnected(msg client.ConnectedMessage) {
 	// Create new map
 	c.Config = msg.Config
 	c.Map = hexMap.NewHexMap(msg.Config, true)
-	c.Map.Send()
+	//c.Map.Send()
 }
 
 // OnStart will be called when game starts and server sends start message
@@ -203,9 +203,7 @@ func (c *CorbaAi) OnStart(msg client.StartMessage) {
 		c.Actions[msg.You.Bots[i].BotId] = &client.Action{BotId: msg.You.Bots[i].BotId}
 		c.WasLocated[msg.You.Bots[i].BotId] = false
 	}
-
-	c.Map.InitEnemies(msg.OtherTeams)
-	c.Map.Send()
+	//c.Map.Send()
 }
 
 // OnEvents will be called when server sends events message.
@@ -245,6 +243,7 @@ func (c *CorbaAi) OnEvents(msg client.EventsMessage) {
 				// Bot was ours so remove bot from data structures
 				delete(c.Actions, int(e.BotId.Int64))
 				delete(c.WasLocated, int(e.BotId.Int64))
+				delete(c.WasHit, int(e.BotId.Int64))
 				c.OurCount--
 			} else {
 				c.EnemyCount--
@@ -272,6 +271,7 @@ func (c *CorbaAi) OnEvents(msg client.EventsMessage) {
 		case client.EVENT_DAMAGED:
 			log.Printf("[corba][OnEvents][damaged] : Bot %d damage %d\n", e.BotId.Int64, e.Damage.Int64)
 			c.WasLocated[int(e.BotId.Int64)] = true
+			c.WasHit[int(e.BotId.Int64)] = true
 			c.Map.HitBot(int(e.BotId.Int64), int(e.Damage.Int64))
 			break
 
