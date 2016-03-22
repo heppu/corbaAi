@@ -102,6 +102,7 @@ func (c *CorbaAi) Move() (actions []client.Action) {
 					continue
 				}
 
+				// This happens when one bot is running and we have only two bots
 				if 0 == (len(c.Actions) - 1 - running) {
 					if c.Actions[botId].Type == client.BOT_RADAR {
 						a.Type = client.BOT_CANNON
