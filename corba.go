@@ -27,7 +27,7 @@ type CorbaAi struct {
 }
 
 // Name for Our Ai
-const AiName string = "Corba"
+const AiName string = "corbaKotka"
 
 func main() {
 	// Create pointer to your AI struct
