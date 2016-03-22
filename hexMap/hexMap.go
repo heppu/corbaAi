@@ -2,6 +2,7 @@ package hexMap
 
 import (
 	"fmt"
+	"math"
 	"math/rand"
 	"net/http"
 
@@ -437,7 +438,10 @@ func (h *HexMap) GetValidRadars(botId int) []client.Position {
 }
 
 func (h *HexMap) getRadaringPoints() (validMoves []client.Position) {
-	outerRing := h.getValidRing(0, 0, 11)
+	// Add corner cases d:D
+	//validMoves = append(validMoves, client.Position{-11, 11}, client.Position{0, 11}, client.Position{11, -11}, client.Position{0, -11})
+
+	outerRing := h.getValidRing(0, 0, 12)
 	for i, v := range outerRing {
 		if i%3 == 0 {
 			validMoves = append(validMoves, v)
@@ -532,6 +536,13 @@ func max(a, b int) int {
 	return a
 }
 
+func abs(x int) int {
+	if x < 0 {
+		return -x
+	}
+	return x
+}
+
 func moveRight(x, y, r int) (a, b int) {
 	a = x + r
 	b = y
@@ -566,4 +577,62 @@ func moveDownRight(x, y, r int) (a, b int) {
 	a = x
 	b = y + r
 	return
+}
+
+// Get axial coordinates (x,y,z) from cube coordinates (x,y)
+func axialToCube(p client.Position) (x, y, z int) {
+	x = p.X
+	z = p.Y
+	y = -x - z
+	return
+}
+
+// Get distance between two points
+func getDistance(start, end client.Position) (dis int) {
+	startX, startY, startZ := axialToCube(start)
+	endX, endY, endZ := axialToCube(end)
+	return max(max(abs(startX-endX), abs(startY-endY)), abs(startZ-endZ))
+}
+
+// Get angle from two points
+func getAngle(start, end client.Position) (angle float64) {
+	return 90 + math.Atan2(float64(start.Y-end.Y), float64(end.X-start.X))*180/math.Pi
+}
+
+// Get movement direction from angle
+func getMoveFromAngle(angle float64) func(x, y, r int) (a, b int) {
+	if angle > 0 && angle < 45 {
+		return moveUpRight
+	} else if angle >= 45 && angle < 135 {
+		return moveRight
+	} else if angle >= 135 && angle < 180 {
+		return moveDownRight
+	} else if angle >= 180 && angle < 225 {
+		return moveDownLeft
+	} else if angle >= 225 && angle < 315 {
+		return moveLeft
+	} else if angle >= 315 && angle <= 360 {
+		return moveUpLeft
+	} else {
+		return moveUpRight
+	}
+}
+
+// Start running towards desirect position
+func (h *HexMap) RunTowardsPosition(botId int, target client.Position) client.Position {
+	currentPosition := h.positionHistory[botId][0]
+
+	angle := getAngle(currentPosition, target)
+	distance := getDistance(currentPosition, target)
+	f := getMoveFromAngle(angle)
+
+	// Move max distance if we are not closer to target position
+	travelDistance := h.config.Move
+	if distance < h.config.Move {
+		travelDistance = distance
+	}
+	x, y := f(currentPosition.X, currentPosition.Y, travelDistance)
+
+	return client.Position{x, y}
+
 }

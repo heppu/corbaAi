@@ -116,8 +116,15 @@ func (c *CorbaAi) Move() (actions []client.Action) {
 		if c.WasLocated[botId] {
 			log.Printf("Bot %d was located run!", botId)
 
-			// Get optimal new position from map
-			a.Position = c.Map.Run(botId)
+			// Check if we have detected enemies
+			// Run towards them hoping they use friendly fire d:D
+			if len(c.EnemyLocations) > 0 {
+				a.Position = c.Map.RunTowardsPosition(botId, *c.EnemyLocations[0])
+			} else {
+				// Get optimal new position from map
+				a.Position = c.Map.Run(botId)
+			}
+
 			a.Type = client.BOT_MOVE
 
 			// Reset hit here
