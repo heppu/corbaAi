@@ -235,6 +235,7 @@ func (h *HexMap) ShootAround(p client.Position, bots int) []client.Position {
 		}
 	}
 
+	fmt.Println("BOTS LEN:", bots)
 	fmt.Println("HEX FILTERED LEN:", len(filtered))
 
 	// If we don't have enaugh safe shooting points add center to it
@@ -254,14 +255,14 @@ func (h *HexMap) ShootAround(p client.Position, bots int) []client.Position {
 	// We have many valid positions around us so let's pick some random points
 	l := len(filtered)
 	i := rand.Intn(l)
-	final = append(final, validPos[i])
+	final = append(final, filtered[i])
 
 	if bots == 2 {
 		i += l / 2
 		if i >= l {
 			i = i - l
 		}
-		final = append(final, validPos[i])
+		final = append(final, filtered[i])
 	}
 	return final
 

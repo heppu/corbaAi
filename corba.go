@@ -53,7 +53,7 @@ func (c *CorbaAi) Move() (actions []client.Action) {
 			// Pick one bot from detected bots and shoot
 			for _, pos := range c.EnemyLocations {
 				botPos = pos
-				positions = c.Map.ShootAround(*botPos, len(c.Actions))
+				positions = c.Map.ShootAround(*botPos, len(c.Actions)-1)
 				if len(positions) > 0 {
 					break
 				}
@@ -67,19 +67,24 @@ func (c *CorbaAi) Move() (actions []client.Action) {
 		if len(positions) > 0 {
 			var i int
 			for _, a := range c.Actions {
-				if i == len(c.Actions)-1 {
+				if i < len(c.Actions)-1 {
+					// These are one or two first bots and they will use cannon
+					if i < len(positions) {
+						log.Println("SHOOT A")
+						a.Position = positions[i]
+					} else {
+						log.Println("SHOOT B")
+						a.Position = positions[len(positions)-1]
+					}
+					a.Type = client.BOT_CANNON
+				} else {
+					log.Println("RADAR")
 					// This is our last bot so it will use radar
 					a.Position = *botPos
 					a.Type = client.BOT_RADAR
-				} else {
-					// These are one or two first bots and they will use cannon
-					a.Position = positions[i]
-					a.Type = client.BOT_CANNON
 				}
 				actions = append(actions, *a)
-				if i < len(positions)-1 {
-					i++
-				}
+				i++
 			}
 			c.Map.Send()
 			return
