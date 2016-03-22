@@ -118,8 +118,10 @@ func (c *CorbaAi) Move() (actions []client.Action) {
 			}
 
 			// Fall back to radaring
-			validMoves := c.Map.GetValidRadars(botId)
-			a.Position = validMoves[rand.Intn(len(validMoves))]
+			//validMoves := c.Map.GetValidRadars(botId)
+
+			//a.Position = validMoves[rand.Intn(len(validMoves))]
+			a.Position = c.Map.GetBotRadaringPoint(botId)
 			a.Type = client.BOT_RADAR
 			c.Radared[botId] = &a.Position
 
@@ -158,9 +160,10 @@ func (c *CorbaAi) OnStart(msg client.StartMessage) {
 	c.Radared = make(map[int]*client.Position)
 	c.WasLocated = make(map[int]bool)
 	c.EnemyLocations = make(map[int]*client.Position)
+	startPoints := c.Map.GetStartPoints(len(msg.You.Bots))
 
 	for i := 0; i < len(msg.You.Bots); i++ {
-		c.Map.SetMyBot(&msg.You.Bots[i])
+		c.Map.SetMyBot(&msg.You.Bots[i], startPoints[i])
 		c.Actions[msg.You.Bots[i].BotId] = &client.Action{BotId: msg.You.Bots[i].BotId}
 		c.WasLocated[msg.You.Bots[i].BotId] = false
 	}

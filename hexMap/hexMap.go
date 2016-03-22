@@ -11,7 +11,7 @@ import (
 
 var upgrader = websocket.Upgrader{}
 
-var moveFuncs = [6]func(x, y int) (a, b int){moveRight, moveUpRight, moveUpLeft, moveLeft, moveDownLeft, moveDownRight}
+var moveFuncs = [6]func(x, y, r int) (a, b int){moveRight, moveUpRight, moveUpLeft, moveLeft, moveDownLeft, moveDownRight}
 
 type HexMap struct {
 	points          map[int]map[int]*Point
@@ -19,6 +19,8 @@ type HexMap struct {
 	myBots          map[int]*client.Bot
 	config          client.GameConfig
 	positionHistory map[int]*[2]client.Position
+	radaringPoints  []client.Position
+	radaringIndexes map[int]int
 }
 
 type Point struct {
@@ -67,6 +69,9 @@ func NewHexMap(c client.GameConfig, visualize bool) *HexMap {
 			y++
 		}
 	}
+
+	hm.radaringPoints = hm.getRadaringPoints()
+	hm.radaringIndexes = make(map[int]int)
 
 	if visualize {
 		hm.connections = make(map[*websocket.Conn]interface{})
@@ -257,8 +262,9 @@ func (h *HexMap) DetectEnemyBot(botId int, pos client.Position) {
 	h.points[pos.X][pos.Y].PossibleBots[botId] = true
 }
 
-func (h *HexMap) SetMyBot(bot *client.Bot) {
+func (h *HexMap) SetMyBot(bot *client.Bot, radarIdx int) {
 	h.myBots[bot.BotId] = bot
+	h.radaringIndexes[bot.BotId] = radarIdx
 	h.markProbed(bot.Position.X, bot.Position.Y, h.config.See)
 
 	// Initialize position history
@@ -370,6 +376,48 @@ func (h *HexMap) GetValidRadars(botId int) []client.Position {
 	return h.getPositionsInRange(0, 0, h.config.FieldRadius-h.config.Radar)
 }
 
+func (h *HexMap) getRadaringPoints() (validMoves []client.Position) {
+	outerRing := h.getValidRing(0, 0, 11)
+	for i, v := range outerRing {
+		if i%3 == 0 {
+			validMoves = append(validMoves, v)
+		}
+	}
+
+	centerRing := h.getValidRing(0, 0, 7)
+	for i, v := range centerRing {
+		if i%3 == 0 {
+			validMoves = append(validMoves, v)
+		}
+	}
+
+	innerRing := h.getValidRing(0, 0, 3)
+	for i, v := range innerRing {
+		if i%3 == 0 {
+			validMoves = append(validMoves, v)
+		}
+	}
+	return
+}
+
+func (h *HexMap) GetStartPoints(botCount int) (points []int) {
+	for i := 0; i < botCount; i++ {
+		points = append(points, 0+i*len(h.radaringPoints)/botCount)
+	}
+	return
+}
+
+func (h *HexMap) GetBotRadaringPoint(botId int) client.Position {
+	point := client.Position{h.radaringPoints[h.radaringIndexes[botId]].X, h.radaringPoints[h.radaringIndexes[botId]].Y}
+	if h.radaringIndexes[botId] < len(h.radaringPoints)-1 {
+		h.radaringIndexes[botId]++
+	} else {
+		h.radaringIndexes[botId] = 0
+	}
+
+	return point
+}
+
 // Get valid positions in hexagon for given radius
 func (h *HexMap) getPositionsInRange(x, y, r int) (pos []client.Position) {
 	for dx := -r; dx < r+1; dx++ {
@@ -407,7 +455,7 @@ func (h *HexMap) getValidRing(x, y, r int) (pos []client.Position) {
 
 	for _, f := range moveFuncs {
 		for i := 0; i < r; i++ {
-			x, y = f(x, y)
+			x, y = f(x, y, 1)
 			if _, ok := h.points[x][y]; ok {
 				pos = append(pos, client.Position{x, y})
 			}
@@ -424,38 +472,38 @@ func max(a, b int) int {
 	return a
 }
 
-func moveRight(x, y int) (a, b int) {
-	a = x + 1
+func moveRight(x, y, r int) (a, b int) {
+	a = x + r
 	b = y
 	return
 }
 
-func moveUpRight(x, y int) (a, b int) {
-	a = x + 1
-	b = y - 1
+func moveUpRight(x, y, r int) (a, b int) {
+	a = x + r
+	b = y - r
 	return
 }
 
-func moveUpLeft(x, y int) (a, b int) {
+func moveUpLeft(x, y, r int) (a, b int) {
 	a = x
-	b = y - 1
+	b = y - r
 	return
 }
 
-func moveLeft(x, y int) (a, b int) {
-	a = x - 1
+func moveLeft(x, y, r int) (a, b int) {
+	a = x - r
 	b = y
 	return
 }
 
-func moveDownLeft(x, y int) (a, b int) {
-	a = x - 1
-	b = y + 1
+func moveDownLeft(x, y, r int) (a, b int) {
+	a = x - r
+	b = y + r
 	return
 }
 
-func moveDownRight(x, y int) (a, b int) {
+func moveDownRight(x, y, r int) (a, b int) {
 	a = x
-	b = y + 1
+	b = y + r
 	return
 }
