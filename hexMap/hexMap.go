@@ -374,7 +374,7 @@ func (h *HexMap) Run(botId int) client.Position {
 	dangerZone := make(map[int]map[int]client.Position)
 	for bId := range h.myBots {
 		if bId != botId {
-			getPositionsInRangeMap(h.myBots[bId].Position.X, h.myBots[bId].Position.Y, h.config.Radar, dangerZone)
+			getPositionsInRangeMap(h.myBots[bId].Position.X, h.myBots[bId].Position.Y, h.config.Radar+2, dangerZone)
 		}
 	}
 
