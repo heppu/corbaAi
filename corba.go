@@ -70,7 +70,16 @@ func (c *CorbaAi) Move() (actions []client.Action) {
 			for botId, a := range c.Actions {
 				// Allow one bot to run
 				if located, ok := c.WasLocated[botId]; ok && located && running == 0 {
-					a.Position = c.Map.Run(botId)
+					// Check if we have detected enemies
+					// Run towards them hoping they use friendly fire d:D
+					if len(c.EnemyLocations) > 0 {
+						log.Println("A : ", *c.EnemyLocations[0])
+						a.Position = c.Map.RunTowardsPosition(botId, *c.EnemyLocations[0])
+					} else {
+						// Get optimal new position from map
+						a.Position = c.Map.Run(botId)
+
+					log.Println("RUN ", a.Position)
 					a.Type = client.BOT_MOVE
 
 					// Add action to list
