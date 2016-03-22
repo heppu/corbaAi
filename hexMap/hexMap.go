@@ -574,6 +574,9 @@ func getAngle(start, end client.Position) (angle float64) {
 
 // Get movement direction from angle
 func getMoveFromAngle(angle float64) func(x, y, r int) (a, b int) {
+	if angle < 0 {
+		angle = angle + 360
+	}
 	if angle > 0 && angle < 45 {
 		return moveUpRight
 	} else if angle >= 45 && angle < 135 {
