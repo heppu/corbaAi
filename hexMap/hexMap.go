@@ -437,7 +437,10 @@ func (h *HexMap) GetValidRadars(botId int) []client.Position {
 }
 
 func (h *HexMap) getRadaringPoints() (validMoves []client.Position) {
-	outerRing := h.getValidRing(0, 0, 11)
+	// Add corner cases d:D
+	//validMoves = append(validMoves, client.Position{-11, 11}, client.Position{0, 11}, client.Position{11, -11}, client.Position{0, -11})
+
+	outerRing := h.getValidRing(0, 0, 12)
 	for i, v := range outerRing {
 		if i%3 == 0 {
 			validMoves = append(validMoves, v)
@@ -615,7 +618,7 @@ func getMoveFromAngle(angle float64) func(x, y, r int) (a, b int) {
 }
 
 // Start running towards desirect position
-func (h *HexMap) RunToPosition(botId int, target client.Position) client.Position {
+func (h *HexMap) RunTowardsPosition(botId int, target client.Position) client.Position {
 	currentPosition := h.positionHistory[botId][0]
 
 	angle := getAngle(currentPosition, target)
