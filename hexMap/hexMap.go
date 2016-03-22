@@ -225,13 +225,13 @@ func (h *HexMap) checkIfBorderPoint(x, y int) bool {
 }
 
 // use this only for 1 or 2 bots
-func (h *HexMap) ShootAround(p client.Position, bots int) []client.Position {
+func (h *HexMap) ShootAround(p client.Position, bots int, filter *client.Position) []client.Position {
 	validPos := h.getValidRing(p.X, p.Y, 1)
 	filtered := make([]client.Position, 0)
 	final := make([]client.Position, 0)
 
 	for _, a := range validPos {
-		if !h.WillDamageOwnBot(a.X, a.Y) {
+		if !h.WillDamageOwnBot(a.X, a.Y) && !h.WillDamageGivenBot(a.X, a.Y, filter) {
 			filtered = append(filtered, a)
 		}
 	}
@@ -239,7 +239,7 @@ func (h *HexMap) ShootAround(p client.Position, bots int) []client.Position {
 	// If we don't have enaugh safe shooting points add center to it
 	// and return valid positions
 	if len(filtered) < bots {
-		if !h.WillDamageOwnBot(p.X, p.Y) {
+		if !h.WillDamageOwnBot(p.X, p.Y) && !h.WillDamageGivenBot(p.X, p.Y, filter) {
 			filtered = append(filtered, p)
 		}
 		return filtered
@@ -356,6 +356,22 @@ func (h *HexMap) WillDamageOwnBot(x, y int) bool {
 				if v[0].X == (dx+x) && v[0].Y == (dy+y) {
 					return true
 				}
+			}
+		}
+	}
+	return false
+}
+
+func (h *HexMap) WillDamageGivenBot(x, y int, p *client.Position) bool {
+	if p == nil {
+		return false
+	}
+
+	r := h.config.Cannon
+	for dx := -r; dx < r+1; dx++ {
+		for dy := max(-r, -dx-r); dy < min(r, -dx+r)+1; dy++ {
+			if p.X == (dx+x) && p.Y == (dy+y) {
+				return true
 			}
 		}
 	}

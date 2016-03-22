@@ -50,12 +50,40 @@ func (c *CorbaAi) Move() (actions []client.Action) {
 	// It will be activated if we know enemylocation and we have more than two bots alive
 	if len(c.EnemyLocations) > 0 && len(c.Actions) > 1 {
 		log.Println("BATTLE BEAST")
-		var botPos *client.Position
 
+		var running int
+		var runningId *int
+		var runningPos *client.Position
+
+		for botId, a := range c.Actions {
+			// Allow one bot to run
+			if located, ok := c.WasLocated[botId]; ok && located && running == 0 {
+				// Check if we have detected enemies
+				// Run towards them hoping they use friendly fire d:D
+				if len(c.EnemyLocations) > 0 {
+					log.Println("A : ", *c.EnemyLocations[0])
+					a.Position = c.Map.RunTowardsPosition(botId, *c.EnemyLocations[0])
+				} else {
+					// Get optimal new position from map
+					a.Position = c.Map.Run(botId)
+				}
+				log.Println("RUN ", a.Position)
+				a.Type = client.BOT_MOVE
+
+				// Add action to list
+				actions = append(actions, *a)
+				running++
+				runningId = &botId
+				runningPos = &a.Position
+				break
+			}
+		}
+
+		var botPos *client.Position
 		// Pick one bot from detected bots and get valid shooting points for each bot
 		for _, pos := range c.EnemyLocations {
 			botPos = pos
-			positions = c.Map.ShootAround(*botPos, len(c.Actions)-1)
+			positions = c.Map.ShootAround(*botPos, len(c.Actions)-1, runningPos)
 			if len(positions) > 0 {
 				break
 			}
@@ -64,32 +92,6 @@ func (c *CorbaAi) Move() (actions []client.Action) {
 		// We got valid shooting positions so let's cannon the shit out of that bot
 		if len(positions) > 0 {
 			var i int
-			var running int
-			var runningId *int
-
-			for botId, a := range c.Actions {
-				// Allow one bot to run
-				if located, ok := c.WasLocated[botId]; ok && located && running == 0 {
-					// Check if we have detected enemies
-					// Run towards them hoping they use friendly fire d:D
-					if len(c.EnemyLocations) > 0 {
-						log.Println("A : ", *c.EnemyLocations[0])
-						a.Position = c.Map.RunTowardsPosition(botId, *c.EnemyLocations[0])
-					} else {
-						// Get optimal new position from map
-						a.Position = c.Map.Run(botId)
-					}
-					log.Println("RUN ", a.Position)
-					a.Type = client.BOT_MOVE
-
-					// Add action to list
-					actions = append(actions, *a)
-					running++
-					runningId = &botId
-					break
-				}
-
-			}
 
 			for botId, a := range c.Actions {
 				// Reset hits
@@ -173,7 +175,7 @@ func (c *CorbaAi) Move() (actions []client.Action) {
 		if len(c.EnemyLocations) > 0 {
 			lastPos := *c.EnemyLocations[0]
 
-			positions = c.Map.ShootAround(lastPos, 1)
+			positions = c.Map.ShootAround(lastPos, 1, nil)
 
 			// This is to prevent our shooting our self
 			if len(positions) == 0 {
