@@ -223,6 +223,51 @@ func (h *HexMap) checkIfBorderPoint(x, y int) bool {
 	return false
 }
 
+// use this only for 1 or 2 bots
+func (h *HexMap) ShootAround(p client.Position, bots int) []client.Position {
+	validPos := h.getValidRing(p.X, p.Y, 1)
+	filtered := make([]client.Position, 0)
+	final := make([]client.Position, 0)
+
+	for _, a := range validPos {
+		if !h.WillDamageOwnBot(a.X, a.Y) {
+			filtered = append(filtered, a)
+		}
+	}
+
+	fmt.Println("HEX FILTERED LEN:", len(filtered))
+
+	// If we don't have enaugh safe shooting points add center to it
+	// and return valid positions
+	if len(filtered) < bots {
+		if !h.WillDamageOwnBot(p.X, p.Y) {
+			filtered = append(filtered, p)
+		}
+		return filtered
+	}
+
+	// We have as many valid positions as request so we return those
+	if len(filtered) == bots {
+		return filtered
+	}
+
+	// We have many valid positions around us so let's pick some random points
+	l := len(filtered)
+	i := rand.Intn(l)
+	final = append(final, validPos[i])
+
+	if bots == 2 {
+		i += l / 2
+		if i >= l {
+			i = i - l
+		}
+		final = append(final, validPos[i])
+	}
+	return final
+
+}
+
+// This is deprecated
 func (h *HexMap) InitEnemies(teams []client.Team) {
 	/*
 		var x = 0
@@ -326,6 +371,20 @@ func (h *HexMap) GetCannonPosition(pos client.Position) client.Position {
 
 func (h *HexMap) Radar(pos *client.Position) {
 	h.markProbed(pos.X, pos.Y, h.config.Radar)
+}
+
+func (h *HexMap) WillDamageOwnBot(x, y int) bool {
+	r := h.config.Cannon
+	for dx := -r; dx < r+1; dx++ {
+		for dy := max(-r, -dx-r); dy < min(r, -dx+r)+1; dy++ {
+			for _, v := range h.positionHistory {
+				if v[0].X == (dx+x) && v[0].Y == (dy+y) {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }
 
 // Get run away move
@@ -441,14 +500,6 @@ func getPositionsInRangeMap(x, y, r int, pos map[int]map[int]client.Position) {
 	}
 }
 
-// Select smallest integer from two integers
-func min(a, b int) int {
-	if b < a {
-		return b
-	}
-	return a
-}
-
 func (h *HexMap) getValidRing(x, y, r int) (pos []client.Position) {
 	x -= r
 	y += r
@@ -462,6 +513,14 @@ func (h *HexMap) getValidRing(x, y, r int) (pos []client.Position) {
 		}
 	}
 	return
+}
+
+// Select smallest integer from two integers
+func min(a, b int) int {
+	if b < a {
+		return b
+	}
+	return a
 }
 
 // Select biggest integer from two integers
