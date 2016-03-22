@@ -69,7 +69,7 @@ func (c *CorbaAi) Move() (actions []client.Action) {
 
 			for botId, a := range c.Actions {
 				// Allow one bot to run
-				if hit, ok := c.WasHit[botId]; ok && hit && running == 0 {
+				if located, ok := c.WasLocated[botId]; ok && located && running == 0 {
 					// Check if we have detected enemies
 					// Run towards them hoping they use friendly fire d:D
 					if len(c.EnemyLocations) > 0 {
@@ -79,8 +79,7 @@ func (c *CorbaAi) Move() (actions []client.Action) {
 						a.Position = c.Map.Run(botId)
 					}
 					a.Type = client.BOT_MOVE
-					// Reset hit here
-					c.WasHit[botId] = false
+
 					// Add action to list
 					actions = append(actions, *a)
 					running++
@@ -91,6 +90,12 @@ func (c *CorbaAi) Move() (actions []client.Action) {
 			}
 
 			for botId, a := range c.Actions {
+				// Reset hits
+				defer func() {
+					c.WasHit[botId] = false
+					c.WasLocated[botId] = false
+				}()
+
 				if runningId != nil && *runningId == botId {
 					continue
 				}
@@ -131,11 +136,19 @@ func (c *CorbaAi) Move() (actions []client.Action) {
 	}
 
 	for botId, a := range c.Actions {
+		// Reset hits
+		defer func() {
+			c.WasHit[botId] = false
+			c.WasLocated[botId] = false
+		}()
+
 		// Set previous radared to nil
 		c.Radared[botId] = nil
 
-		// If our bot was seen activate run tactic
-		if c.WasHit[botId] {
+		// If our bot was hit activate run tactic
+		// Or if this is our last bot and it was radared run
+		if c.WasHit[botId] ||
+			(len(c.Actions) == 1 && c.WasLocated[botId] && len(c.EnemyLocations) == 0) {
 			log.Printf("Bot %d was located run!", botId)
 
 			// Check if we have detected enemies
@@ -148,12 +161,6 @@ func (c *CorbaAi) Move() (actions []client.Action) {
 			}
 
 			a.Type = client.BOT_MOVE
-
-			// Reset hit here
-			c.WasHit[botId] = false
-			c.WasLocated[botId] = false
-
-			// Add action to list
 			actions = append(actions, *a)
 			continue
 
@@ -161,11 +168,23 @@ func (c *CorbaAi) Move() (actions []client.Action) {
 
 		// This happens if we have only 1 bot left and we know enemy location
 		if len(c.EnemyLocations) > 0 {
+			lastPos := *c.EnemyLocations[0]
+
+			positions = c.Map.ShootAround(lastPos, 1)
+
+			// This is to prevent our shooting our self
+			if len(positions) == 0 {
+				a.Position = c.Map.RunTowardsPosition(botId, *c.EnemyLocations[0])
+				a.Type = client.BOT_MOVE
+				actions = append(actions, *a)
+				continue
+			}
+
 			a.Type = client.BOT_CANNON
-			a.Position = *c.EnemyLocations[0]
-			c.LastShotPosition = &a.Position
+			a.Position = positions[0]
+			c.LastShotPosition = &lastPos
 			actions = append(actions, *a)
-			break
+			continue
 		}
 
 		// Fall back to radaring
