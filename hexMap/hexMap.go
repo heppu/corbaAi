@@ -594,7 +594,7 @@ func getMoveFromAngle(angle float64) func(x, y, r int) (a, b int) {
 		angle = angle + 360
 	}
 	fmt.Println("Angle:", angle)
-	if angle > 0 && angle < 45 {
+	if angle >= 0 && angle < 45 {
 		return moveUpRight
 	} else if angle >= 45 && angle < 135 {
 		return moveRight
