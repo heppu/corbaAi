@@ -159,10 +159,17 @@ func (c *CorbaAi) Move() (actions []client.Action) {
 
 		}
 
-		// Fall back to radaring
-		//validMoves := c.Map.GetValidRadars(botId)
-		//a.Position = validMoves[rand.Intn(len(validMoves))]
+		// This happens if we have only 1 bot left and we know enemy location
+		if len(c.EnemyLocations) > 0 {
+			a.Type = client.BOT_RADAR
+			a.Position = *c.EnemyLocations[0]
+			c.LastShotPosition = &a.Position
+			actions = append(actions, *a)
+			break
+		}
 
+		// Fall back to radaring
+		// If we shot some bot in last round use that as radaring point
 		if c.LastShotPosition != nil {
 			log.Println("USE LAST POSITION : ", *c.LastShotPosition)
 			a.Position = *c.LastShotPosition
