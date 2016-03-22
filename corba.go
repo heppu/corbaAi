@@ -16,11 +16,10 @@ type CorbaAi struct {
 	OtherTeams     []client.Team
 	Config         client.GameConfig
 	Map            *hexMap.HexMap
-	Actions        map[int]*client.Action
-	WasLocated     map[int]bool
-	Radared        map[int]*client.Position
-	EnemyLocations map[int]*client.Position
-	LastShot       *int
+	Actions        map[int]*client.Action   // Here we store bot actions and map bots that are alive
+	WasLocated     map[int]bool             // True of our bot was located
+	Radared        map[int]*client.Position // This is used to open points we radared on last round
+	EnemyLocations []*client.Position       // Enemy positions
 }
 
 // Name for Our Ai
@@ -39,99 +38,105 @@ func main() {
 
 // Move function will be called after OnEvents function returns
 func (c *CorbaAi) Move() (actions []client.Action) {
-	log.Println("[corba][move]")
+	//log.Println("[corba][move]")
 
-	var shooting = 0
+	var positions = make([]client.Position, 0)
 
-	// Choose tactic base on how many bots we have
-	switch len(c.Actions) {
-	/*
-		case 1:
-			log.Println("Do something")
-			break
-		case 2:
-			log.Println("Do something")
-			break
-	*/
-	default:
-		for botId, a := range c.Actions {
-			// Set previous radared to nil
-			c.Radared[botId] = nil
+	// This is our battle beast mode.
+	// It will be activated if we know enemylocation and we have more than two bots alive
+	if len(c.EnemyLocations) > 0 && len(c.Actions) > 1 {
+		log.Println("BATTLE BEAST")
+		var botPos *client.Position
 
-			// If our bot was seen activate run tactic
-			if c.WasLocated[botId] {
-				log.Printf("Bot %d was located run!", botId)
-
-				// Get optimal new position from map
-				a.Position = c.Map.Run(botId)
-				a.Type = client.BOT_MOVE
-
-				// Reset hit here
-				c.WasLocated[botId] = false
-
-				// Add action to list
-				actions = append(actions, *a)
-				continue
-
-			}
-
-			// If all other bots are shooting use last one to radar
-			if shooting == len(c.Actions)-1 {
-				if _, ok := c.EnemyLocations[*c.LastShot]; ok {
-					a.Position = *c.EnemyLocations[*c.LastShot]
-					a.Type = client.BOT_RADAR
-					c.Radared[botId] = &a.Position
-
-					// Add action to list
-					actions = append(actions, *a)
-					continue
-				}
-			}
-
-			// We have shot some bot last round so lets go after him
-			if c.LastShot != nil {
-				// Check that we have location for that bot
-				if pos, ok := c.EnemyLocations[*c.LastShot]; ok {
-					shooting++
-					a.Position = *pos
-					a.Type = client.BOT_CANNON
-					actions = append(actions, *a)
-					continue
-				}
-
-			}
-
-			// Check if we have detected new bots
-			if len(c.EnemyLocations) > 0 {
-				// Pick one bot from detected bots and shoot
-				var last int
-				for botId, pos := range c.EnemyLocations {
-					shooting++
-					last = botId
-					c.LastShot = &last
-					a.Position = *pos
-					a.Type = client.BOT_CANNON
-					actions = append(actions, *a)
+		// Check if we have detected new bots
+		if botPos == nil {
+			// Pick one bot from detected bots and shoot
+			for _, pos := range c.EnemyLocations {
+				botPos = pos
+				positions = c.Map.ShootAround(*botPos, len(c.Actions))
+				if len(positions) > 0 {
 					break
 				}
-				continue
 			}
+		}
 
-			// Fall back to radaring
-			//validMoves := c.Map.GetValidRadars(botId)
+		log.Println("botPos: ", *botPos)
+		log.Println("Shooting positions", positions)
 
-			//a.Position = validMoves[rand.Intn(len(validMoves))]
-			a.Position = c.Map.GetBotRadaringPoint(botId)
-			a.Type = client.BOT_RADAR
-			c.Radared[botId] = &a.Position
+		// We got valid shooting positions so let's cannon the shit out of that bot
+		if len(positions) > 0 {
+			var i int
+			for _, a := range c.Actions {
+				if i == len(c.Actions)-1 {
+					// This is our last bot so it will use radar
+					a.Position = *botPos
+					a.Type = client.BOT_RADAR
+				} else {
+					// These are one or two first bots and they will use cannon
+					a.Position = positions[i]
+					a.Type = client.BOT_CANNON
+				}
+				actions = append(actions, *a)
+				if i < len(positions)-1 {
+					i++
+				}
+			}
+			c.Map.Send()
+			return
+		}
+	}
+
+	for botId, a := range c.Actions {
+		// Set previous radared to nil
+		c.Radared[botId] = nil
+
+		// This is our last bot so let's use special tactics
+		if len(c.Actions) == 1 {
+			log.Printf("Do something great here")
+
+			// Get optimal new position from map
+			a.Position = c.Map.Run(botId)
+			a.Type = client.BOT_MOVE
+
+			// Reset hit here
+			c.WasLocated[botId] = false
 
 			// Add action to list
 			actions = append(actions, *a)
+			continue
+
 		}
-		break
+
+		// If our bot was seen activate run tactic
+		if c.WasLocated[botId] {
+			log.Printf("Bot %d was located run!", botId)
+
+			// Get optimal new position from map
+			a.Position = c.Map.Run(botId)
+			a.Type = client.BOT_MOVE
+
+			// Reset hit here
+			c.WasLocated[botId] = false
+
+			// Add action to list
+			actions = append(actions, *a)
+			continue
+
+		}
+
+		// Fall back to radaring
+		//validMoves := c.Map.GetValidRadars(botId)
+		//a.Position = validMoves[rand.Intn(len(validMoves))]
+
+		a.Position = c.Map.GetBotRadaringPoint(botId)
+		a.Type = client.BOT_RADAR
+		c.Radared[botId] = &a.Position
+
+		// Add action to list
+		actions = append(actions, *a)
 	}
+
 	//spew.Dump(actions)
-	shooting = 0
 	c.Map.Send()
 	return
 }
@@ -159,7 +164,7 @@ func (c *CorbaAi) OnStart(msg client.StartMessage) {
 	c.Actions = make(map[int]*client.Action)
 	c.Radared = make(map[int]*client.Position)
 	c.WasLocated = make(map[int]bool)
-	c.EnemyLocations = make(map[int]*client.Position)
+	c.EnemyLocations = make([]*client.Position, 0)
 	startPoints := c.Map.GetStartPoints(len(msg.You.Bots))
 
 	for i := 0; i < len(msg.You.Bots); i++ {
@@ -193,9 +198,7 @@ func (c *CorbaAi) OnEvents(msg client.EventsMessage) {
 	}
 
 	// Clear enemy locations
-	for botId, _ := range c.EnemyLocations {
-		delete(c.EnemyLocations, botId)
-	}
+	c.EnemyLocations = make([]*client.Position, 0)
 
 	for _, e := range msg.Events {
 		switch e.Type {
@@ -206,22 +209,22 @@ func (c *CorbaAi) OnEvents(msg client.EventsMessage) {
 
 		case client.EVENT_DIE:
 			log.Printf("[corba][OnEvents][die] : Bot %d\n", e.BotId.Int64)
-			// Remove bot from data structures
 			if _, ok := c.Actions[int(e.BotId.Int64)]; ok {
+				// Bot was ours so remove bot from data structures
 				delete(c.Actions, int(e.BotId.Int64))
 				delete(c.WasLocated, int(e.BotId.Int64))
 			}
 
 		case client.EVENT_RADAR_ECHO:
-			log.Printf("[corba][OnEvents][radarEcho] : Pos %v\n", e.Position)
+			log.Printf("[corba][OnEvents][radarEcho] : Pos %v\n", e.BotId.Int64, e.Position)
 			c.Map.DetectEnemyBot(int(e.BotId.Int64), e.Position)
-			c.EnemyLocations[int(e.BotId.Int64)] = &e.Position
+			c.EnemyLocations = append(c.EnemyLocations, &client.Position{e.Position.X, e.Position.Y})
 
 		// This will happen when too bots see each other
 		case client.EVENT_SEE:
-			log.Printf("[corba][OnEvents][see] : Bot %d Source %d\n", e.BotId.Int64, e.Source.Int64)
+			log.Printf("[corba][OnEvents][see] : Bot %d Source %d Pos %v\n", e.BotId.Int64, e.Source.Int64, e.Position)
 			c.Map.DetectEnemyBot(int(e.BotId.Int64), e.Position)
-			c.EnemyLocations[int(e.BotId.Int64)] = &e.Position
+			c.EnemyLocations = append(c.EnemyLocations, &client.Position{e.Position.X, e.Position.Y})
 
 		case client.EVENT_DETECTED:
 			log.Printf("[corba][OnEvents][detected] : Bot %d\n", e.BotId.Int64)
@@ -233,12 +236,12 @@ func (c *CorbaAi) OnEvents(msg client.EventsMessage) {
 			c.Map.HitBot(int(e.BotId.Int64), int(e.Damage.Int64))
 
 		case client.EVENT_MOVE:
-			log.Printf("[corba][OnEvents][move] : Bot %d\n", e.BotId.Int64)
+			//log.Printf("[corba][OnEvents][move] : Bot %d\n", e.BotId.Int64)
 			c.Map.MoveMyBot(int(e.BotId.Int64), e.Position)
 			delete(stay, int(e.BotId.Int64))
 
 		case client.EVENT_NOACTION:
-			log.Printf("[corba][OnEvents][noaction] : Bot %d\n", e.BotId.Int64)
+			//log.Printf("[corba][OnEvents][noaction] : Bot %d\n", e.BotId.Int64)
 			c.Map.Stay(int(e.BotId.Int64))
 
 		case client.EVENT_END:
