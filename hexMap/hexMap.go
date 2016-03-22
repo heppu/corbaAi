@@ -236,9 +236,6 @@ func (h *HexMap) ShootAround(p client.Position, bots int) []client.Position {
 		}
 	}
 
-	fmt.Println("BOTS LEN:", bots)
-	fmt.Println("HEX FILTERED LEN:", len(filtered))
-
 	// If we don't have enaugh safe shooting points add center to it
 	// and return valid positions
 	if len(filtered) < bots {

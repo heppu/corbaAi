@@ -60,9 +60,6 @@ func (c *CorbaAi) Move() (actions []client.Action) {
 			}
 		}
 
-		log.Println("botPos: ", *botPos)
-		log.Println("Shooting positions", positions)
-
 		// We got valid shooting positions so let's cannon the shit out of that bot
 		if len(positions) > 0 {
 			var i int
@@ -70,15 +67,12 @@ func (c *CorbaAi) Move() (actions []client.Action) {
 				if i < len(c.Actions)-1 {
 					// These are one or two first bots and they will use cannon
 					if i < len(positions) {
-						log.Println("SHOOT A")
 						a.Position = positions[i]
 					} else {
-						log.Println("SHOOT B")
 						a.Position = positions[len(positions)-1]
 					}
 					a.Type = client.BOT_CANNON
 				} else {
-					log.Println("RADAR")
 					// This is our last bot so it will use radar
 					a.Position = *botPos
 					a.Type = client.BOT_RADAR
