@@ -70,14 +70,7 @@ func (c *CorbaAi) Move() (actions []client.Action) {
 			for botId, a := range c.Actions {
 				// Allow one bot to run
 				if located, ok := c.WasLocated[botId]; ok && located && running == 0 {
-					// Check if we have detected enemies
-					// Run towards them hoping they use friendly fire d:D
-					if len(c.EnemyLocations) > 0 {
-						a.Position = c.Map.RunTowardsPosition(botId, *c.EnemyLocations[0])
-					} else {
-						// Get optimal new position from map
-						a.Position = c.Map.Run(botId)
-					}
+					a.Position = c.Map.Run(botId)
 					a.Type = client.BOT_MOVE
 
 					// Add action to list
@@ -91,10 +84,10 @@ func (c *CorbaAi) Move() (actions []client.Action) {
 
 			for botId, a := range c.Actions {
 				// Reset hits
-				defer func() {
+				defer func(botId int) {
 					c.WasHit[botId] = false
 					c.WasLocated[botId] = false
-				}()
+				}(botId)
 
 				if runningId != nil && *runningId == botId {
 					continue
@@ -137,10 +130,10 @@ func (c *CorbaAi) Move() (actions []client.Action) {
 
 	for botId, a := range c.Actions {
 		// Reset hits
-		defer func() {
+		defer func(botId int) {
 			c.WasHit[botId] = false
 			c.WasLocated[botId] = false
-		}()
+		}(botId)
 
 		// Set previous radared to nil
 		c.Radared[botId] = nil
