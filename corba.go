@@ -265,7 +265,7 @@ func (c *CorbaAi) OnEvents(msg client.EventsMessage) {
 			break
 
 		case client.EVENT_RADAR_ECHO:
-			log.Printf("[corba][OnEvents][radarEcho] : Pos %v\n", e.BotId.Int64, e.Position)
+			log.Printf("[corba][OnEvents][radarEcho] : Pos %v\n", e.Position)
 			c.Map.DetectEnemyBot(int(e.BotId.Int64), e.Position)
 			c.EnemyLocations = append(c.EnemyLocations, &client.Position{e.Position.X, e.Position.Y})
 			break
