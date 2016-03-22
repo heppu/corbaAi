@@ -161,7 +161,7 @@ func (c *CorbaAi) Move() (actions []client.Action) {
 
 		// This happens if we have only 1 bot left and we know enemy location
 		if len(c.EnemyLocations) > 0 {
-			a.Type = client.BOT_RADAR
+			a.Type = client.BOT_CANNON
 			a.Position = *c.EnemyLocations[0]
 			c.LastShotPosition = &a.Position
 			actions = append(actions, *a)
