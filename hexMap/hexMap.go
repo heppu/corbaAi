@@ -266,30 +266,6 @@ func (h *HexMap) ShootAround(p client.Position, bots int) []client.Position {
 
 }
 
-// This is deprecated
-func (h *HexMap) InitEnemies(teams []client.Team) {
-	/*
-		var x = 0
-		var y = 0
-
-		for i := -h.config.FieldRadius; i < h.config.FieldRadius+1; i++ {
-			for j := -x; j < h.config.FieldRadius+1-y; j++ {
-				for _, t := range teams {
-					for _, b := range t.Bots {
-						h.points[i][j].PossibleBots[b.BotId] = true
-					}
-				}
-			}
-
-			if x < h.config.FieldRadius {
-				x++
-			} else {
-				y++
-			}
-		}
-	*/
-}
-
 func (h *HexMap) DetectEnemyBot(botId int, pos client.Position) {
 	// Remove enemy bot possible locations from other points
 	var x, y int
