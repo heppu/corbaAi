@@ -78,7 +78,7 @@ func (c *CorbaAi) Move() (actions []client.Action) {
 					} else {
 						// Get optimal new position from map
 						a.Position = c.Map.Run(botId)
-
+					}
 					log.Println("RUN ", a.Position)
 					a.Type = client.BOT_MOVE
 
